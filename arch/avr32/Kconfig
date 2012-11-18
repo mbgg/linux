@@ -157,6 +157,10 @@ config BOARD_MERISC
 config BOARD_MIMC200
 	bool "MIMC200 CPU board"
 	select CPU_AT32AP7000
+
+config BOARD_WISMIT
+	bool "Wismit V02 Board"
+	select CPU_AT32AP7000
 endchoice
 
 source "arch/avr32/boards/atstk1000/Kconfig"
@@ -164,6 +168,7 @@ source "arch/avr32/boards/atngw100/Kconfig"
 source "arch/avr32/boards/hammerhead/Kconfig"
 source "arch/avr32/boards/favr-32/Kconfig"
 source "arch/avr32/boards/merisc/Kconfig"
+source "arch/avr32/boards/wismit/Kconfig"
 
 choice
 	prompt "Boot loader type"
