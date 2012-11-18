@@ -1,0 +1,13 @@
+# wismit customization
+
+if BOARD_WISMIT
+
+config BOARD_WISMIT_HSB_MATRIX_TUNE
+   bool "Tune hsb matrix to prioritze SPI controller"
+   help
+      Tunes the High Speed Bus Matrix to give Peripheral DMA Controller
+      direct connection to EBI interface.
+
+      Choose 'Y' if you make heavy use of SPI on your Board.
+
+endif # BOARD_WISMIT
