@@ -300,6 +300,6 @@
 /* 280 was __NR_timerfd */
 #define __NR_eventfd		281
 #define __NR_setns		283
-
+#define __NR_epoll_create1	285
 
 #endif /* _UAPI__ASM_AVR32_UNISTD_H */
