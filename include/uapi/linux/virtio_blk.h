@@ -114,6 +114,10 @@ struct virtio_blk_outhdr {
 	__u32 ioprio;
 	/* Sector (ie. 512 byte offset) */
 	__u64 sector;
+#ifdef CONFIG_VIRTIO_BLK_VCFQ
+	/* Virtual pid of guest thread */
+	pid_t vpid;
+#endif
 };
 
 struct virtio_scsi_inhdr {
