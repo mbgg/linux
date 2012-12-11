@@ -318,6 +318,9 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
 			vbr->out_hdr.type = 0;
 			vbr->out_hdr.sector = blk_rq_pos(vbr->req);
 			vbr->out_hdr.ioprio = req_get_ioprio(vbr->req);
+#ifdef CONFIG_VIRTIO_BLK_VCFQ
+			vbr->out_hdr.vpid = req_get_vpid(vbr->req);
+#endif
 			break;
 		case REQ_TYPE_BLOCK_PC:
 			vbr->out_hdr.type = VIRTIO_BLK_T_SCSI_CMD;

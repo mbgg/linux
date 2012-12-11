@@ -515,6 +515,19 @@ config VIRTIO_BLK
 	  This is the virtual block driver for virtio.  It can be used with
           lguest or QEMU based VMMs (like KVM or Xen).  Say Y or M.
 
+config VIRTIO_BLK_VCFQ
+	bool "Pass VPID to host"
+	depends on VIRTIO_BLK && IOSCHED_NOOP
+	default n
+	help
+	  I/O scheduler in the host use the PID to group request before sending
+	  them to the disk device driver. If you use disk images for your guest
+	  which are stored on a hard-drive, this will get better throughput and
+	  a better behaviour of CFQ on your guest workload.
+
+	  Beware that you need to have a virtual machine monitor which supports
+	  this kind of information.
+
 config BLK_DEV_HD
 	bool "Very old hard disk (MFM/RLL/IDE) driver"
 	depends on HAVE_IDE

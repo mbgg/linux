@@ -130,6 +130,9 @@ struct request {
 	 */
 	union {
 		struct {
+#ifdef CONFIG_VIRTIO_BLK_VCFQ
+			pid_t			vpid;
+#endif
 			struct io_cq		*icq;
 			void			*priv[2];
 		} elv;
@@ -198,6 +201,13 @@ static inline unsigned short req_get_ioprio(struct request *req)
 {
 	return req->ioprio;
 }
+
+#ifdef CONFIG_VIRTIO_BLK_VCFQ
+static inline pid_t req_get_vpid(struct request *req)
+{
+	return req->elv.vpid;
+}
+#endif
 
 /*
  * State information carried for REQ_TYPE_PM_SUSPEND and REQ_TYPE_PM_RESUME
