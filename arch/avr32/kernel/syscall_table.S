@@ -299,3 +299,30 @@ sys_call_table:
 	.long	sys_setns
 	.long	sys_ni_syscall		/* r8 is saturated at nr_syscalls */
 	.long	sys_epoll_create1	/* 285 */
+   .long sys_pread64
+   .long sys_pwrite64
+   .long sys_timerfd_create
+   .long sys_fallocate
+   .long sys_timerfd_settime
+   .long sys_timerfd_gettime /* 290 */
+   .long sys_dignalfd4
+   .long sys_eventdf2
+   .long sys_dup3
+   .long sys_pipe2
+   .long sys_inotify_init1 /* 295 */
+   .long sys_preadv
+   .long sys_pwritev
+   .long sys_rt_tgsigqueueinfo
+   .long sys_perf_event_open
+   .long sys_recvmmsg /* 300 */
+   .long sys_fanotify_init
+   .long sys_fanotify_mark
+   .long sys_prlimit64
+   .long sys_name_to_handle_at
+   .long sys_open_by_handle_at /* 305 */
+   .long sys_clock_adjtime
+   .long sys_syncfs
+   .long sys_sendmmsg
+   .long sys_process_vm_readv
+   .long sys_process_vm_writev /* 310 */
+   .long sys_kcmp

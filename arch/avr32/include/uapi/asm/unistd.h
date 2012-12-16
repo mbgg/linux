@@ -301,5 +301,37 @@
 #define __NR_eventfd		281
 #define __NR_setns		283
 #define __NR_epoll_create1	285
+#define __NR_pread64		286
+#define __NR_pwrite64		286
+#define __NR_timerfd_create 		287
+#define __NR_fallocate  288
+#define __NR_timerfd_settime  289
+#define __NR_timerfd_gettime  290
+
+#define __NR_signalfd4  291
+#define __NR_eventfd2   292
+#define __NR_dup3       293
+#define __NR_pipe2   294
+#define __NR_inotify_init1 295
+
+#define __NR_preadv  296
+#define __NR_pwritev  297
+#define __NR_rt_tgsigqueueinfo   298
+#define __NR_perf_event_open  299
+#define __NR_recvmmsg   300
+
+#define __NR_fanotify_init 301
+#define __NR_fanotify_mark 302
+#define __NR_prlimit64  303
+#define __NR_name_to_handle_at   304
+#define __NR_open_by_handle_at   305
+
+#define __NR_clock_adjtime 306
+#define __NR_syncfs  307
+#define __NR_sendmmsg   308
+#define __NR_process_vm_readv 309
+#define __NR_process_vm_writev   310
+
+#define __NR_kcmp 311
 
 #endif /* _UAPI__ASM_AVR32_UNISTD_H */
