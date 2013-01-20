@@ -521,6 +521,7 @@ static void __init igep_i2c_init(void)
 		igep_twldata.keypad	= &igep2_keypad_pdata;
 		/* Get common pmic data */
 		omap3_pmic_get_config(&igep_twldata, TWL_COMMON_PDATA_AUDIO, 0);
+		omap3_pmic_get_config(&igep_twldata, TWL_COMMON_PDATA_POWER, 0);
 	}
 
 	omap3_pmic_init("twl4030", &igep_twldata);
