@@ -10,7 +10,7 @@
 
 #include <uapi/asm/unistd.h>
 
-#define NR_syscalls		284
+#define NR_syscalls		312
 
 /* Old stuff */
 #define __IGNORE_uselib
