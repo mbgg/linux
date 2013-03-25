@@ -10,7 +10,19 @@ Required properties:
 			  input. The default is D0 as input and
 			  D1 as output.
 
+SPI Controller specific data in SPI slave nodes:
+
+- The spi slave nodes can provide the following information which is used
+  by the spi controller.
+
+- ti,spi-cs-per-word: Set chipselect to be toggled on every word send.
+
+- ti,spi-turbo-mode: Set turbo mode for this device.
+
+
 Example:
+
+- SoC Specific Portion:
 
 mcspi1: mcspi@1 {
     #address-cells = <1>;
@@ -20,3 +32,14 @@ mcspi1: mcspi@1 {
     ti,spi-num-cs = <4>;
 };
 
+- Board Specific Portion:
+
+	spi-device@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		controller-data {
+			ti,spi-cs-per-word = <1>;
+			ti,spi-turbo-mode = <0>;
+		};
+	};

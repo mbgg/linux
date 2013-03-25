@@ -731,11 +731,47 @@ static u32 omap2_mcspi_calc_divisor(u32 speed_hz)
 	return 15;
 }
 
+static struct omap2_mcspi_device_config *omap2_mcspi_get_slave_ctrldata(
+			struct spi_device *spi)
+{
+	struct omap2_mcspi_device_config *cd;
+	struct device_node *slave_np, *data_np = NULL;
+
+	slave_np = spi->dev.of_node;
+	if (!slave_np) {
+		dev_err(&spi->dev, "device node not found\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	data_np = of_get_child_by_name(slave_np, "controller-data");
+	if (!data_np) {
+		dev_err(&spi->dev, "child node 'controller-data' not found\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	cd = kzalloc(sizeof(*cd), GFP_KERNEL);
+	if (!cd) {
+		dev_err(&spi->dev, "could not allocate memory for controller data\n");
+		of_node_put(data_np);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	if (of_get_property(data_np, "ti,spi-cs-per-word", NULL))
+		cd->cs_per_word = 1;
+
+	if (of_get_property(data_np, "ti,spi-turbo-mode", NULL))
+		cd->turbo_mode = 1;
+
+	of_node_put(data_np);
+	return cd;
+}
+
 /* called only when no transfer is active to this device */
 static int omap2_mcspi_setup_transfer(struct spi_device *spi,
 		struct spi_transfer *t)
 {
 	struct omap2_mcspi_cs *cs = spi->controller_state;
+	struct omap2_mcspi_device_config *cd = spi->controller_data;
 	struct omap2_mcspi *mcspi;
 	struct spi_master *spi_cntrl;
 	u32 l = 0, div = 0;
@@ -744,6 +780,11 @@ static int omap2_mcspi_setup_transfer(struct spi_device *spi,
 
 	mcspi = spi_master_get_devdata(spi->master);
 	spi_cntrl = mcspi->master;
+
+	if (!cd && spi->dev.of_node) {
+		cd = omap2_mcspi_get_slave_ctrldata(spi);
+		spi->controller_data = cd;
+	}
 
 	if (t != NULL && t->bits_per_word)
 		word_len = t->bits_per_word;
