@@ -129,6 +129,7 @@ struct omap2_mcspi {
 	struct omap2_mcspi_dma	*dma_channels;
 	struct device		*dev;
 	struct omap2_mcspi_regs ctx;
+	u8			cs_per_word;
 	unsigned int		pin_dir:1;
 };
 
@@ -954,7 +955,7 @@ static void omap2_mcspi_work(struct omap2_mcspi *mcspi, struct spi_message *m)
 			if (!t->speed_hz && !t->bits_per_word)
 				par_override = 0;
 		}
-		if (cd && cd->cs_per_word) {
+		if (mcspi->cs_per_word == spi->chip_select) {
 			chconf = mcspi->ctx.modulctrl;
 			chconf &= ~OMAP2_MCSPI_MODULCTRL_SINGLE;
 			mcspi_write_reg(master, OMAP2_MCSPI_MODULCTRL, chconf);
@@ -1023,7 +1024,7 @@ static void omap2_mcspi_work(struct omap2_mcspi *mcspi, struct spi_message *m)
 	if (cs_active)
 		omap2_mcspi_force_cs(spi, 0);
 
-	if (cd && cd->cs_per_word) {
+	if (mcspi->cs_per_word == spi->chip_select) {
 		chconf = mcspi->ctx.modulctrl;
 		chconf |= OMAP2_MCSPI_MODULCTRL_SINGLE;
 		mcspi_write_reg(master, OMAP2_MCSPI_MODULCTRL, chconf);
@@ -1195,6 +1196,7 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
 
 	match = of_match_device(omap_mcspi_of_match, &pdev->dev);
 	if (match) {
+		u32 num_toggle = -1;
 		u32 num_cs = 1; /* default number of chipselect */
 		pdata = match->data;
 
@@ -1203,6 +1205,9 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
 		master->bus_num = bus_num++;
 		if (of_get_property(node, "ti,pindir-d0-out-d1-in", NULL))
 			mcspi->pin_dir = MCSPI_PINDIR_D0_OUT_D1_IN;
+
+		of_get_property(node, "ti,spi-toggle-cs", &num_toggle);
+		mcspi->cs_per_word = num_toggle;
 	} else {
 		pdata = pdev->dev.platform_data;
 		master->num_chipselect = pdata->num_cs;

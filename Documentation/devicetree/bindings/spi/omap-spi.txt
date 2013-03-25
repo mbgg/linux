@@ -10,6 +10,9 @@ Required properties:
 			  input. The default is D0 as input and
 			  D1 as output.
 
+Optional properties:
+- ti,spi-toggle-cs: Set chipselect which will be toggled on every word send.
+
 Example:
 
 mcspi1: mcspi@1 {
