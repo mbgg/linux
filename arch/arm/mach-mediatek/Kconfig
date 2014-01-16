@@ -1,0 +1,10 @@
+config ARCH_MEDIATEK
+	bool "Mediatek SOCs" if ARCH_MULTI_V7
+	select ARCH_REQUIRE_GPIOLIB
+	select ARM_GIC
+	select CACHE_L2X0
+	select COMMON_CLK
+	select GENERIC_CLOCKEVENTS
+	select DW_APB_TIMER_OF
+	help
+	  bla bla bla

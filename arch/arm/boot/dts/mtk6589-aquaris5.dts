@@ -1,0 +1,43 @@
+/*
+ * Copyright (c) 2013 MundoReader S.L.
+ * Author: Heiko Stuebner <heiko@sntech.de>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+#include "mtk6589.dtsi"
+
+/ {
+	model = "bq Aquaris5";
+
+	chosen {
+		bootargs = "console=ttyS0,115200, earlyprintk";
+	};
+
+	memory {
+		reg = <0x80000000 0x40000000>;
+	};
+
+	soc {
+
+		vcc_sd0: fixed-regulator {
+			compatible = "regulator-fixed";
+			regulator-name = "sdmmc-supply";
+			regulator-min-microvolt = <3000000>;
+			regulator-max-microvolt = <3000000>;
+//			gpio = <&gpio3 7 GPIO_ACTIVE_LOW>;
+			startup-delay-us = <100000>;
+		};
+
+
+	};
+};

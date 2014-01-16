@@ -742,6 +742,34 @@ choice
 		  Say Y here if you want kernel low-level debugging support
 		  on Ux500 based platforms.
 
+	config DEBUG_MTK6589_UART0
+		depends on ARCH_MEDIATEK
+		bool "Mediatek mt6589 UART0"
+		help
+		  Say Y here if you want kernel low-level debugging support
+		  on Mediatek mt6589 based platforms.
+
+	config DEBUG_MTK6589_UART1
+		depends on ARCH_MEDIATEK
+		bool "Mediatek mt6589 UART1"
+		help
+		  Say Y here if you want kernel low-level debugging support
+		  on Mediatek mt6589 based platforms.
+
+	config DEBUG_MTK6589_UART2
+		depends on ARCH_MEDIATEK
+		bool "Mediatek mt6589 UART2"
+		help
+		  Say Y here if you want kernel low-level debugging support
+		  on Mediatek mt6589 based platforms.
+
+	config DEBUG_MTK6589_UART3
+		depends on ARCH_MEDIATEK
+		bool "Mediatek mt6589 UART3"
+		help
+		  Say Y here if you want kernel low-level debugging support
+		  on Mediatek mt6589 based platforms.
+
 	config DEBUG_VEXPRESS_UART0_DETECT
 		bool "Autodetect UART0 on Versatile Express Cortex-A core tiles"
 		depends on ARCH_VEXPRESS && CPU_CP15_MMU
@@ -908,6 +936,10 @@ config DEBUG_LL_INCLUDE
 	default "debug/vexpress.S" if DEBUG_VEXPRESS_UART0_DETECT
 	default "debug/vt8500.S" if DEBUG_VT8500_UART0
 	default "debug/zynq.S" if DEBUG_ZYNQ_UART0 || DEBUG_ZYNQ_UART1
+	default "debug/mediatek.S" if DEBUG_MTK6589_UART0 || \
+				      DEBUG_MTK6589_UART1 || \
+				      DEBUG_MTK6589_UART2 || \
+				      DEBUG_MTK6589_UART3
 	default "mach/debug-macro.S"
 
 # Compatibility options for PL01x
