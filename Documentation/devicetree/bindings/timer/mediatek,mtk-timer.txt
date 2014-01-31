@@ -1,0 +1,24 @@
+Mediatek MT6598, MT6577 and MT6572 Timers
+---------------------------------------
+
+Required properties:
+- compatible: Should be either "mediatek,mtk6589-timer", "mediatek,mtk6577-timer" or
+  "mediatek,mtk6572-timer" as appropriate.
+- reg: Should contain location and length for timers register. First
+  pair for the registers used for all timers, second pair for the clock event timer and
+  third for the clock source timer.
+
+- clock-names : Must include the following entries:
+  "sysclk" (13 MHz system clock),
+  "rtcclk" (32 KHz RTC clock).
+
+Examples:
+
+	timer {
+		compatible = "mediatek,mtk6589-timer";
+		reg = <0x10008000 0x10>, <0x10008010 0x10>, <0x10008020 0x10>;
+		interrupts = <145>;
+		clocks = <&system-13m>, <&rtc-clk-32k>;
+		clock-names = "sysclk", "rtcclk";
+	};
+
