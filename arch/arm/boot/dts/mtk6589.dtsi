@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2013 MundoReader S.L.
+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include "skeleton.dtsi"
+#include "mt6589-clocks.dtsi"
+
+/ {
+	compatible = "mediatek,mt6589";
+	interrupt-parent = <&gic>;
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			next-level-cache = <&L2>;
+			reg = <0x0>;
+		};
+		cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			next-level-cache = <&L2>;
+			reg = <0x1>;
+		};
+		cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			next-level-cache = <&L2>;
+			reg = <0x2>;
+		};
+		cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			next-level-cache = <&L2>;
+			reg = <0x3>;
+		};
+
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		ranges;
+
+		/* might be cortex-a7-gic */
+		gic: interrupt-controller@10212000 {
+			compatible = "arm,cortex-a9-gic";
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			reg = <0x10211000 0x1000>,
+			      <0x10212000 0x1000>;
+		};
+
+		L2: l2-cache-controller@1020e000 {
+			compatible = "arm,pl310-cache";
+			reg = <0x1020e000 0x1000>;
+			cache-unified;
+			cache-level = <2>;
+		};
+
+		timer {
+			compatible = "mediatek,mtk6589-timer";
+			reg = <0x10008000 0x10>,
+			      <0x10008010 0x10>,
+			      <0x10008020 0x10>;
+			interrupts = <0 145 0x1>;
+			clocks = <&system13m>, <&rtcclk32k>;
+			clock-names = "sysclk", "rtcclk";
+		};
+
+/*		timer {
+			compatible = "arm,armv7-timer";
+				interrupts = <GIC_PPI 13 0xf08>,
+					     <GIC_PPI 14 0xf08>,
+					     <GIC_PPI 11 0xf08>,
+					     <GIC_PPI 10 0xf08>;
+				clock-frequency = <150000000>;
+*/
+/*				interrupts = <GIC_SPI 24 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>,
+				     <GIC_SPI 20 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>,
+				     <GIC_SPI 12 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>,
+				     <GIC_SPI 16 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>;
+*/
+/*		}; */
+	};
+};
