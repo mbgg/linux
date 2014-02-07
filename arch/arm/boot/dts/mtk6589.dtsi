@@ -77,14 +77,12 @@
 			cache-level = <2>;
 		};
 
-		timer {
+		timer: timer@10008000 {
 			compatible = "mediatek,mtk6589-timer";
-			reg = <0x10008000 0x10>,
-			      <0x10008010 0x10>,
-			      <0x10008020 0x10>;
-			interrupts = <0 145 0x1>;
-			clocks = <&system13m>, <&rtcclk32k>;
-			clock-names = "sysclk", "rtcclk";
+			reg = <0x10008000 0x30>;
+			interrupts = <GIC_SPI 113 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&system_clk>, <&rtc_clk>;
+			clock-names = "sys_clk", "rtc_clk";
 		};
 	};
 };
