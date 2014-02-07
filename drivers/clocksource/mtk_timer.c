@@ -21,13 +21,12 @@
 #include <linux/of_irq.h>
 
 #define GPT_IRQ_EN_REG		0x00
-#define GPT_IRQ_ENABLE(val)	BIT(val)
+#define GPT_IRQ_ENABLE(val)	BIT(val-1)
 #define GPT_IRQ_ST_REG		0x04
 #define GPT_IRQ_ACK_REG		0x08
-#define GPT_IRQ_ACK(val)	BIT(val)
+#define GPT_IRQ_ACK(val)	BIT(val-1)
 
-#define TIMER_CTRL_REG		0x00
-//0x10
+#define TIMER_CTRL_REG(val)	(0x10 * val)
 #define TIMER_CTRL_OP(val)	(((val) & 0x3) << 4)
 #define TIMER_CTRL_OP_ONESHOT	(0)
 #define TIMER_CTRL_OP_REPEAT	(1)
@@ -37,8 +36,7 @@
 #define TIMER_CTRL_ENABLE	(1)
 #define TIMER_CTRL_DISABLE	(0)
 
-#define TIMER_CLK_REG		0x04
-//0x14
+#define TIMER_CLK_REG(val)	(0x04 + (0x10 * val))
 #define TIMER_CLK_SRC(val)	(((val) & 0x1) << 4)
 #define TIMER_CLK_SRC_SYS13M	(0)
 #define TIMER_CLK_SRC_RTC32K	(1)
@@ -59,33 +57,34 @@
 #define TIMER_CLK_DIV32		(0xE)
 #define TIMER_CLK_DIV64		(0xF)
 
-#define TIMER_CNT_REG		0x08
-//0x18
-#define TIMER_CMP_REG		0x0C
-//0x1C
+#define TIMER_CNT_REG(val)	(0x08 + (0x10 * val))
+#define TIMER_CMP_REG(val)	(0x0C + (0x10 * val))
 
-static void __iomem *gpt_base, *clksource_base, *clkevent_base;
+#define GPT_CLK_EVT	1
+#define GPT_CLK_SRC	2
+
+static void __iomem *gpt_base;
 static u32 ticks_per_jiffy;
 
-static void mtk_clkevt_time_stop(void)
+static void mtk_clkevt_time_stop(u8 timer)
 {
-	u32 val = readl(clkevent_base + TIMER_CTRL_REG);
-	writel(val & ~TIMER_CTRL_ENABLE, clkevent_base + TIMER_CTRL_REG);
+	u32 val = readl(gpt_base + TIMER_CTRL_REG(timer));
+	writel(val & ~TIMER_CTRL_ENABLE, gpt_base + TIMER_CTRL_REG(timer));
 }
 
-static void mtk_clkevt_time_setup(unsigned long delay)
+static void mtk_clkevt_time_setup(unsigned long delay, u8 timer)
 {
-	writel(delay, clkevent_base + TIMER_CMP_REG);
+	writel(delay, gpt_base + TIMER_CMP_REG(timer));
 }
 
-static void mtk_clkevt_time_start(bool periodic)
+static void mtk_clkevt_time_start(bool periodic, u8 timer)
 {
 	u32 val;
 	
 	/* Acknowledge interrupt */
-	writel(GPT_IRQ_ACK(0), gpt_base + GPT_IRQ_ACK_REG);
+	writel(GPT_IRQ_ACK(timer), gpt_base + GPT_IRQ_ACK_REG);
        
-	val = readl(clkevent_base + TIMER_CTRL_REG);
+	val = readl(gpt_base + TIMER_CTRL_REG(timer));
 
 	/* Clear 3 bit timer operation field */
 	val &= ~TIMER_CTRL_OP(0x3);
@@ -96,21 +95,21 @@ static void mtk_clkevt_time_start(bool periodic)
 		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_ONESHOT);
 
 	writel(val | TIMER_CTRL_ENABLE | TIMER_CTRL_CLEAR,
-	       clkevent_base + TIMER_CTRL_REG);
+	       gpt_base + TIMER_CTRL_REG(timer));
 }
 
 static void mtk_clkevt_mode(enum clock_event_mode mode,
 			      struct clock_event_device *clk)
 {
-	mtk_clkevt_time_stop();
+	mtk_clkevt_time_stop(GPT_CLK_EVT);
 
 	switch (mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
-		mtk_clkevt_time_setup(ticks_per_jiffy);
-		mtk_clkevt_time_start(true);
+		mtk_clkevt_time_setup(ticks_per_jiffy, GPT_CLK_EVT);
+		mtk_clkevt_time_start(true, GPT_CLK_EVT);
 		break;
 	case CLOCK_EVT_MODE_ONESHOT:
-		mtk_clkevt_time_start(false);
+		mtk_clkevt_time_start(false, GPT_CLK_EVT);
 		break;
 	case CLOCK_EVT_MODE_UNUSED:
 	case CLOCK_EVT_MODE_SHUTDOWN:
@@ -123,9 +122,9 @@ static void mtk_clkevt_mode(enum clock_event_mode mode,
 static int mtk_clkevt_next_event(unsigned long evt,
 				   struct clock_event_device *unused)
 {
-	mtk_clkevt_time_stop();
-	mtk_clkevt_time_setup(evt);
-	mtk_clkevt_time_start(false);
+	mtk_clkevt_time_stop(GPT_CLK_EVT);
+	mtk_clkevt_time_setup(evt, GPT_CLK_EVT);
+	mtk_clkevt_time_start(false, GPT_CLK_EVT);
 
 	return 0;
 }
@@ -145,7 +144,7 @@ static irqreturn_t mtk_timer_interrupt(int irq, void *dev_id)
 	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
 
 	/* acknowledge timer0 irq */
-	writel(GPT_IRQ_ACK(0), gpt_base + GPT_IRQ_ACK_REG);
+	writel(GPT_IRQ_ACK(GPT_CLK_EVT), gpt_base + GPT_IRQ_ACK_REG);
 	evt->event_handler(evt);
 
 	return IRQ_HANDLED;
@@ -159,21 +158,10 @@ static void mtk_timer_global_reset(void)
 	writel(0x3f, gpt_base + GPT_IRQ_ACK_REG);
 }
 
-static void mtk_timer_reset(void __iomem *base)
+static void mtk_timer_reset(u8 timer)
 {
-
-	// TODO we can do this in one step?
-	//writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE, base + TIMER_CTRL_REG);
-	writel(TIMER_CTRL_DISABLE, base + TIMER_CTRL_REG);
-
-	// TODO we might not need write to TIMER_CLK_REG
-	/* Use system clock and no divider */
-	writel(0x0, base + TIMER_CLK_REG);
-
-	writel(TIMER_CTRL_CLEAR, base + TIMER_CTRL_REG);
-
-	writel(0x0, base + TIMER_CMP_REG);
-
+	writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE, gpt_base + TIMER_CTRL_REG(timer));
+	writel(0x0, gpt_base + TIMER_CMP_REG(timer));
 }
 
 static struct irqaction mtk_timer_irq = {
@@ -185,7 +173,7 @@ static struct irqaction mtk_timer_irq = {
 
 static u32 mtk_timer_sched_read(void)
 {
-	return readl(clksource_base + TIMER_CNT_REG);
+	return readl(gpt_base + TIMER_CNT_REG(GPT_CLK_SRC));
 }
 
 
@@ -200,24 +188,24 @@ void dump_regs()
 	new = readl(gpt_base + GPT_IRQ_ACK_REG);
 	pr_warn("GPT_IRQ_ACK_REG = %x\n", new & 0x3f);
 
-	pr_warn("clksource_base = %p\n", clksource_base);
-	new = readl(clksource_base + TIMER_CTRL_REG);
+	pr_warn("clock source\n");
+	new = readl(gpt_base + TIMER_CTRL_REG(GPT_CLK_SRC));
 	pr_warn("TIMER_CRTL_REG = %x\n", new & 0x33);
-	new = readl(clksource_base + TIMER_CLK_REG);
+	new = readl(gpt_base + TIMER_CLK_REG(GPT_CLK_SRC));
 	pr_warn("TIMER_CLK_REG = %x\n", new & 0x1F);
-	new = readl(clksource_base + TIMER_CNT_REG);
+	new = readl(gpt_base + TIMER_CNT_REG(GPT_CLK_SRC));
 	pr_warn("TIMER_CNT_REG = %x\n", new);
-	new = readl(clksource_base + TIMER_CMP_REG);
+	new = readl(gpt_base+ TIMER_CMP_REG(GPT_CLK_SRC));
 	pr_warn("TIMER_CMP_REG = %x\n", new);
 
-	pr_warn("clkevent_base = %p\n", clkevent_base);
-	new = readl(clkevent_base + TIMER_CTRL_REG);
+	pr_warn("clock event\n");
+	new = readl(gpt_base + TIMER_CTRL_REG(GPT_CLK_EVT));
 	pr_warn("TIMER_CRTL_REG = %x\n", new & 0x33);
-	new = readl(clkevent_base + TIMER_CLK_REG);
+	new = readl(gpt_base + TIMER_CLK_REG(GPT_CLK_EVT));
 	pr_warn("TIMER_CLK_REG = %x\n", new & 0x1F);
-	new = readl(clkevent_base + TIMER_CNT_REG);
+	new = readl(gpt_base + TIMER_CNT_REG(GPT_CLK_EVT));
 	pr_warn("TIMER_CNT_REG = %x\n", new);
-	new = readl(clkevent_base + TIMER_CMP_REG);
+	new = readl(gpt_base + TIMER_CMP_REG(GPT_CLK_EVT));
 	pr_warn("TIMER_CMP_REG = %x\n", new);
 }
 #include <linux/delay.h>
@@ -230,69 +218,53 @@ static void __init mtk_timer_init(struct device_node *node)
 
 	gpt_base = of_iomap(node, 0);
 	if (!gpt_base)
-		panic("Can't map registers gpt_base");
-
-	clkevent_base = of_iomap(node, 1);
-	if (!clkevent_base)
-		panic("Can't map registers clkevent_base");
-
-	clksource_base = of_iomap(node, 2);
-	if (!clksource_base)
-		panic("Can't map registers clksource_base");
+		panic("Can't map registers");
 
 	irq = irq_of_parse_and_map(node, 0);
 	if (irq <= 0)
 		panic("Can't parse IRQ");
-	/*
-	clk = of_clk_get_by_name(node, "system13m");
+
+	clk = of_clk_get_by_name(node, "sys_clk");
+	//clk = of_clk_get(node, 0);
 	if (IS_ERR(clk))
-		panic("Can't get timer clock");
+		panic("Can't get timer clockd");
 	clk_prepare_enable(clk);
 
-	// clockrate is arlead set to 13MHz
 	rate = clk_get_rate(clk);
-	*/
-	rate = 15000000;
 
 	mtk_timer_global_reset();
 	
 	/* configure clock source */
-	mtk_timer_reset(clksource_base);
-	//writel(TIMER_CTRL_OP(TIMER_CTRL_OP_FREERUN), clksource_base + TIMER_CTRL_REG);
+	mtk_timer_reset(GPT_CLK_SRC);
 
 	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
-			clksource_base + TIMER_CLK_REG);
+			gpt_base + TIMER_CLK_REG(GPT_CLK_SRC));
 
-	//writel(TIMER_CTRL_OP(TIMER_CTRL_ENABLE), clksource_base + TIMER_CTRL_REG);
 	writel(TIMER_CTRL_OP(TIMER_CTRL_OP_FREERUN) | TIMER_CTRL_ENABLE,
-				clksource_base + TIMER_CTRL_REG);
+				gpt_base + TIMER_CTRL_REG(GPT_CLK_SRC));
 
-	setup_sched_clock(mtk_timer_sched_read, 32, rate);
-	clocksource_mmio_init(clksource_base + TIMER_CNT_REG, node->name,
-			      rate, 300, 32, clocksource_mmio_readl_down);
+	clocksource_mmio_init(gpt_base + TIMER_CNT_REG(GPT_CLK_SRC), node->name,
+			      rate, 300, 32, clocksource_mmio_readl_up);
 
 	ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
 
 	/* configure clock event */
-	mtk_timer_reset(clkevent_base);
-	//writel(TIMER_CTRL_OP(TIMER_CTRL_OP_REPEAT), clkevent_base + TIMER_CTRL_REG);
+	mtk_timer_reset(GPT_CLK_EVT);
 
 	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
-			clkevent_base + TIMER_CLK_REG);
-	writel(0, clkevent_base + TIMER_CMP_REG);
+			gpt_base + TIMER_CLK_REG(GPT_CLK_EVT));
+	writel(0, gpt_base + TIMER_CMP_REG(GPT_CLK_EVT));
 
-	/* TODO really enable IRQ before setup_irq????
-	 * Enable timer0 interrupt */
-	val = readl(gpt_base + GPT_IRQ_EN_REG);
-	writel(val | GPT_IRQ_ENABLE(0), gpt_base + GPT_IRQ_EN_REG);
-
-	//writel(TIMER_CTRL_OP(TIMER_CTRL_ENABLE), clkevent_base + TIMER_CTRL_REG);
 	writel(TIMER_CTRL_OP(TIMER_CTRL_OP_REPEAT) | TIMER_CTRL_ENABLE,
-			clkevent_base + TIMER_CTRL_REG);
+			gpt_base + TIMER_CTRL_REG(GPT_CLK_EVT));
 
 	ret = setup_irq(irq, &mtk_timer_irq);
 	if (ret)
 		pr_warn("failed to setup irq %d\n", irq);
+
+	/* Enable timer0 interrupt */
+	val = readl(gpt_base + GPT_IRQ_EN_REG);
+	writel(val | GPT_IRQ_ENABLE(GPT_CLK_EVT), gpt_base + GPT_IRQ_EN_REG);
 
 	mtk_clockevent.cpumask = cpumask_of(0);
 
