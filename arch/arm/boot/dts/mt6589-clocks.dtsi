@@ -19,40 +19,18 @@
 		#size-cells = <1>;
 		ranges;
 
-		/*
-		 * This is a dummy clock, to be used as placeholder on
-		 * other mux clocks when a specific parent clock is not
-		 * yet implemented. It should be dropped when the driver
-		 * is complete.
-		 */
-		dummy: dummy {
-			compatible = "fixed-clock";
-			clock-frequency = <0>;
-			#clock-cells = <0>;
-		};
-
-		xin26m: xin26m {
-			compatible = "fixed-clock";
-			clock-frequency = <26000000>;
-			#clock-cells = <0>;
-		};
-
-		system13m: system13m {
+		system_clk: system_clk {
 			compatible = "fixed-clock";
 			clock-frequency = <13000000>;
 			#clock-cells = <0>;
+			clock-output-names = "system_clk";
 		};
 
-		rtcclk32k: rtcclk32k {
+		rtc_clk: rtc_clk {
 			compatible = "fixed-clock";
 			clock-frequency = <32000>;
 			#clock-cells = <0>;
-		};
-
-		dummy150m: dummy150m {
-			compatible = "fixed-clock";
-			clock-frequency = <150000000>;
-			#clock-cells = <0>;
+			clock-output-names = "rtc_clk";
 		};
 	};
 };
