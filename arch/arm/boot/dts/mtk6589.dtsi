@@ -58,6 +58,7 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "simple-bus";
+		clock-ranges;
 		ranges;
 
 		/* might be cortex-a7-gic */
@@ -85,20 +86,5 @@
 			clocks = <&system13m>, <&rtcclk32k>;
 			clock-names = "sysclk", "rtcclk";
 		};
-
-/*		timer {
-			compatible = "arm,armv7-timer";
-				interrupts = <GIC_PPI 13 0xf08>,
-					     <GIC_PPI 14 0xf08>,
-					     <GIC_PPI 11 0xf08>,
-					     <GIC_PPI 10 0xf08>;
-				clock-frequency = <150000000>;
-*/
-/*				interrupts = <GIC_SPI 24 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>,
-				     <GIC_SPI 20 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>,
-				     <GIC_SPI 12 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>,
-				     <GIC_SPI 16 (GIC_CPU_MASK_RAW(f) | IRQ_TYPE_LEVEL_LOW)>;
-*/
-/*		}; */
 	};
 };
