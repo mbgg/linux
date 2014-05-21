@@ -1509,6 +1509,20 @@ config SERIAL_FSL_LPUART_CONSOLE
 	  If you have enabled the lpuart serial port on the Freescale SoCs,
 	  you can make it the console by answering Y to this option.
 
+config SERIAL_MTK_UART
+	tristate "Mediatek serial port support"
+	select SERIAL_CORE
+	help
+	  Support for the on-chip uart on some Mediatek SOCs.
+
+config SERIAL_MTK_UART_CONSOLE
+	bool "Console on Freescale lpuart serial port"
+	depends on SERIAL_MTK_UART=y
+	select SERIAL_CORE_CONSOLE
+	help
+	  If you have enabled the uart serial port on the Mediatek SoCs,
+	  you can make it the console by answering Y to this option.
+
 config SERIAL_ST_ASC
 	tristate "ST ASC serial port support"
 	select SERIAL_CORE
