@@ -75,6 +75,12 @@ config BATTERY_88PM860X
 	help
 	  Say Y here to enable battery monitor for Marvell 88PM860x chip.
 
+config BATTERY_DS2745
+	tristate "DS2745 low-power battery monitor"
+	depends on I2C
+	help
+	  Say Y here to enable support for the battery monitor ds2745.
+
 config BATTERY_DS2760
 	tristate "DS2760 battery driver (HP iPAQ & others)"
 	depends on W1 && W1_SLAVE_DS2760
