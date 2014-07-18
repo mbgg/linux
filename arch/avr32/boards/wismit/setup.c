@@ -29,6 +29,8 @@
 #include <linux/gpio_keys.h>
 #include <linux/input.h>
 
+#include <linux/ds2782_battery.h>
+
 #define GCLK0_RATE	1000000		// for barometer (smd500) clock input
 #define GCLK1_RATE	1311000		// for EMF (xen-1200) clock input
 
@@ -205,12 +207,20 @@ static struct platform_device i2c_gpio_device = {
     },
 };
 
+static struct ds278x_platform_data __initdata sensor_data = {
+	.rsns = 50,
+};
+
 static struct i2c_board_info __initdata i2c_info[] = {
    {
       I2C_BOARD_INFO("bmp085", 0x77),
    },
    {
       I2C_BOARD_INFO("tsl2550", 0x29),
+   },
+   {
+      I2C_BOARD_INFO("ds2745", 0x48),
+      .platform_data = &sensor_data,
    },
 };
 
