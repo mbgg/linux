@@ -209,6 +209,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
 	bool scanphys = false;
 	int addr, rc;
 
+	dev_err(&mdio->dev, "mdio register %s\n", mdio->name);
 	/* Do not continue if the node is disabled */
 	if (!of_device_is_available(np))
 		return -ENODEV;
@@ -253,7 +254,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
 				continue;
 
 			/* be noisy to encourage people to set reg property */
-			dev_info(&mdio->dev, "scan phy %s at address %i\n",
+			dev_err(&mdio->dev, "scan phy %s at address %i\n",
 				 child->name, addr);
 
 			if (of_mdiobus_child_is_phy(child))

@@ -702,7 +702,7 @@ static int xgene_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
 	u32 val;
 
 	val = xgene_mii_phy_read(pdata, mii_id, regnum);
-	netdev_dbg(pdata->ndev, "mdio_rd: bus=%d reg=%d val=%x\n",
+	netdev_err(pdata->ndev, "mdio_rd: bus=%d reg=%d val=%x\n",
 		   mii_id, regnum, val);
 
 	return val;
@@ -713,7 +713,7 @@ static int xgene_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
 {
 	struct xgene_enet_pdata *pdata = bus->priv;
 
-	netdev_dbg(pdata->ndev, "mdio_wr: bus=%d reg=%d val=%x\n",
+	netdev_err(pdata->ndev, "mdio_wr: bus=%d reg=%d val=%x\n",
 		   mii_id, regnum, val);
 	return xgene_mii_phy_write(pdata, mii_id, regnum, val);
 }
