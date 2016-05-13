@@ -845,7 +845,7 @@ int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
 	netdev_err(ndev, "%s\n", __func__);
 	mdio_bus = mdiobus_alloc();
 	if (!mdio_bus) {
-		netdev_err(ndev, "error mdiobus_alloc\n", __func__);
+		netdev_err(ndev, "error mdiobus_alloc\n");
 		return -ENOMEM;
 	}
 

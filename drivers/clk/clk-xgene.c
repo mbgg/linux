@@ -245,6 +245,7 @@ static int xgene_clk_enable(struct clk_hw *hw)
 	u32 data;
 	phys_addr_t reg;
 
+printk(KERN_ERR"xgene clk enable %s\n", clk_hw_get_name(hw));
 	if (pclk->lock)
 		spin_lock_irqsave(pclk->lock, flags);
 
@@ -286,6 +287,7 @@ static void xgene_clk_disable(struct clk_hw *hw)
 	unsigned long flags = 0;
 	u32 data;
 
+printk(KERN_ERR"xgene clk disable %s\n", clk_hw_get_name(hw));
 	if (pclk->lock)
 		spin_lock_irqsave(pclk->lock, flags);
 
@@ -473,6 +475,7 @@ static void __init xgene_devclk_init(struct device_node *np)
 	struct xgene_dev_parameters parameters;
 	int i;
 
+pr_err("%s", __func__);
 	/* Check if the entry is disabled */
         if (!of_device_is_available(np))
                 return;
@@ -526,7 +529,7 @@ static void __init xgene_devclk_init(struct device_node *np)
 		of_clk_get_parent_name(np, 0), &parameters, &clk_lock);
 	if (IS_ERR(clk))
 		goto err;
-	pr_debug("Add %s clock\n", clk_name);
+	pr_err("Add %s clock\n", clk_name);
 	rc = of_clk_add_provider(np, of_clk_src_simple_get, clk);
 	if (rc != 0)
 		pr_err("%s: could register provider clk %s\n", __func__,
