@@ -712,6 +712,7 @@ static int xgene_enet_open(struct net_device *ndev)
 	const struct xgene_mac_ops *mac_ops = pdata->mac_ops;
 	int ret;
 
+	netdev_err(ndev, "%s\n", __func__);
 	ret = netif_set_real_num_tx_queues(ndev, pdata->txq_cnt);
 	if (ret)
 		return ret;
@@ -1567,6 +1568,7 @@ static int xgene_enet_probe(struct platform_device *pdev)
 	of_id = of_match_device(xgene_enet_of_match, &pdev->dev);
 	if (of_id) {
 		pdata->enet_id = (enum xgene_enet_id)of_id->data;
+		dev_err(&pdev->dev, "dts name = %s %s\n", of_id->name, of_id->compatible);
 	}
 #ifdef CONFIG_ACPI
 	else {
@@ -1578,14 +1580,16 @@ static int xgene_enet_probe(struct platform_device *pdev)
 	}
 #endif
 	if (!pdata->enet_id) {
+		dev_err(&pdev->dev, "error no enet_id\n");
 		free_netdev(ndev);
 		return -ENODEV;
 	}
 
 	ret = xgene_enet_get_resources(pdata);
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "error enet_get_ressource\n");
 		goto err;
-
+	}
 	xgene_enet_setup_ops(pdata);
 
 	if (pdata->phy_mode == PHY_INTERFACE_MODE_XGMII) {
@@ -1607,15 +1611,20 @@ static int xgene_enet_probe(struct platform_device *pdev)
 	}
 
 	ret = xgene_enet_init_hw(pdata);
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "error enet_init_hw\n");
 		goto err_netdev;
+	}
 
 	mac_ops = pdata->mac_ops;
 	if (pdata->phy_mode == PHY_INTERFACE_MODE_RGMII) {
 		ret = xgene_enet_mdio_config(pdata);
-		if (ret)
+		if (ret) {
+			dev_err(&pdev->dev, "error enet_mdio_config\n");
 			goto err_netdev;
+		}
 	} else {
+		dev_err(&pdev->dev, "INIT_DELAY_WORK\n");
 		INIT_DELAYED_WORK(&pdata->link_work, mac_ops->link_state);
 	}
 

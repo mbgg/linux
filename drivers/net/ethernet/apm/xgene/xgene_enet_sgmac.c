@@ -384,20 +384,22 @@ static void xgene_enet_link_state(struct work_struct *work)
 
 	link = xgene_enet_link_status(p);
 	if (link) {
+		netdev_err(ndev, "link_status ON\n");
 		if (!netif_carrier_ok(ndev)) {
 			netif_carrier_on(ndev);
 			xgene_sgmac_init(p);
 			xgene_sgmac_rx_enable(p);
 			xgene_sgmac_tx_enable(p);
-			netdev_info(ndev, "Link is Up - 1Gbps\n");
+			netdev_err(ndev, "Link is Up - 1Gbps\n");
 		}
 		poll_interval = PHY_POLL_LINK_ON;
 	} else {
+		netdev_err(ndev, "link_status OFF\n");
 		if (netif_carrier_ok(ndev)) {
 			xgene_sgmac_rx_disable(p);
 			xgene_sgmac_tx_disable(p);
 			netif_carrier_off(ndev);
-			netdev_info(ndev, "Link is Down\n");
+			netdev_err(ndev, "Link is Down\n");
 		}
 		poll_interval = PHY_POLL_LINK_OFF;
 	}
