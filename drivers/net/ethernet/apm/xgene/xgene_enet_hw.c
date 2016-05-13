@@ -842,9 +842,12 @@ int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
 	struct mii_bus *mdio_bus;
 	int ret;
 
+	netdev_err(ndev, "%s\n", __func__);
 	mdio_bus = mdiobus_alloc();
-	if (!mdio_bus)
+	if (!mdio_bus) {
+		netdev_err(ndev, "error mdiobus_alloc\n", __func__);
 		return -ENOMEM;
+	}
 
 	mdio_bus->name = "APM X-Gene MDIO bus";
 	mdio_bus->read = xgene_enet_mdio_read;

@@ -1622,7 +1622,8 @@ static int xgene_enet_probe(struct platform_device *pdev)
 		if (ret) {
 			dev_err(&pdev->dev, "error enet_mdio_config\n");
 			goto err_netdev;
-		}
+		} else
+			dev_err(&pdev->dev, "sucess enet_mdio_config\n");
 	} else {
 		dev_err(&pdev->dev, "INIT_DELAY_WORK\n");
 		INIT_DELAYED_WORK(&pdata->link_work, mac_ops->link_state);

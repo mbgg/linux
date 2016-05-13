@@ -1272,6 +1272,7 @@ int genphy_read_status(struct phy_device *phydev)
 	int common_adv;
 	int common_adv_gb = 0;
 
+printk(KERN_ERR"%s id %x\n", __func__, phy);
 	/* Update the link, but return if there was an error */
 	err = genphy_update_link(phydev);
 	if (err)
