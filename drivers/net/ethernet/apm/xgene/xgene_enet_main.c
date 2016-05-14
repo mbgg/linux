@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <linux/clk-provider.h>
 #include "xgene_enet_main.h"
 #include "xgene_enet_hw.h"
 #include "xgene_enet_sgmac.h"
@@ -1347,6 +1348,9 @@ static int xgene_enet_get_resources(struct xgene_enet_pdata *pdata)
 	if (IS_ERR(pdata->clk)) {
 		/* Firmware may have set up the clock already. */
 		dev_info(dev, "clocks have been setup already\n");
+	} else {
+		char const *name = __clk_get_name(pdata->clk);
+		dev_err(dev, "got clock %s\n", name); 
 	}
 
 	if (pdata->phy_mode != PHY_INTERFACE_MODE_XGMII)

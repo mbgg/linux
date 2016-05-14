@@ -678,7 +678,9 @@ static int xgene_enet_reset(struct xgene_enet_pdata *pdata)
 		clk_disable_unprepare(pdata->clk);
 		clk_prepare_enable(pdata->clk);
 		xgene_enet_ecc_init(pdata);
-	}
+		printk(KERN_ERR"%s clock enabled\n", __func__);
+	} else
+		printk(KERN_ERR"%s clock not present\n", __func__);
 	xgene_enet_config_ring_if_assoc(pdata);
 
 	/* Enable auto-incr for scanning */
@@ -692,8 +694,11 @@ static int xgene_enet_reset(struct xgene_enet_pdata *pdata)
 
 static void xgene_gport_shutdown(struct xgene_enet_pdata *pdata)
 {
-	if (!IS_ERR(pdata->clk))
+	if (!IS_ERR(pdata->clk)) {
 		clk_disable_unprepare(pdata->clk);
+		printk(KERN_ERR"%s clock disabled\n", __func__);
+	} else
+		printk(KERN_ERR"%s clock not present\n", __func__);
 }
 
 static int xgene_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
