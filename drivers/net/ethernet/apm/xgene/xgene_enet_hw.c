@@ -474,6 +474,10 @@ static void xgene_enet_configure_clock(struct xgene_enet_pdata *pdata)
 {
 	struct device *dev = &pdata->pdev->dev;
 
+	printk(KERN_ERR"%s\n", __func__);
+	if (!IS_ERR(pdata->clk))
+		clk_prepare_enable(pdata->clk);
+
 	if (dev->of_node) {
 		struct clk *parent = clk_get_parent(pdata->clk);
 
@@ -507,6 +511,8 @@ static void xgene_enet_configure_clock(struct xgene_enet_pdata *pdata)
 		}
 	}
 #endif
+	if (!IS_ERR(pdata->clk))
+		clk_disable_unprepare(pdata->clk);
 }
 
 static void xgene_gmac_init(struct xgene_enet_pdata *pdata)
