@@ -536,7 +536,8 @@ pr_err("%s", __func__);
 		pr_err("%s: could register provider clk %s\n", __func__,
 			np->full_name);
 
-	if (!strcmp(clk_name, "menetclk") || !strcmp(clk_name, "ethclk")) {
+	if (!strcmp(clk_name, "menetclk") || !strcmp(clk_name, "ethclk") ||
+		!strcmp(clk_name, "xge0clk")) {
 		pr_err("Enabling critical clock %s\n", clk_name);
 		clk_prepare_enable(clk);
 	}
