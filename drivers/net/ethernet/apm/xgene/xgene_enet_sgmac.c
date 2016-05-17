@@ -335,6 +335,7 @@ static int xgene_enet_reset(struct xgene_enet_pdata *p)
 		return -ENODEV;
 
 	if (!IS_ERR(p->clk)) {
+		clk_disable_unprepare(p->clk);
 		clk_prepare_enable(p->clk);
 		clk_disable_unprepare(p->clk);
 		clk_prepare_enable(p->clk);
