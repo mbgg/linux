@@ -537,7 +537,7 @@ pr_err("%s", __func__);
 			np->full_name);
 
 	if (!strcmp(clk_name, "menetclk") ||
-		!strcmp(clk_name, "sge0clk") || !strcmp(clk_name, "sge1clk")) {
+		!strcmp(clk_name, "sge0clk")) {
 		pr_err("Enabling critical clock %s\n", clk_name);
 		clk_prepare_enable(clk);
 	}
