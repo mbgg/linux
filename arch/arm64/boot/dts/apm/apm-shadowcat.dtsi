@@ -625,6 +625,15 @@
 			apm,irq-start = <8>;
 		};
 
+		mdio: mdio@0x1f610000 {
+			compatible = "apm,xgene-mdio-sgmii";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x0 0x1f610000 0x0 0x100>,
+			      <0x0 0X1f61d000 0x0 0X100>;
+			clocks = <&xge0clk 0>;
+		};
+
 		sgenet0: ethernet@1f610000 {
 			compatible = "apm,xgene2-sgenet";
 			status = "disabled";
@@ -637,6 +646,7 @@
 			clocks = <&xge0clk 0>;
 			local-mac-address = [00 01 73 00 00 01];
 			phy-connection-type = "sgmii";
+			phy-handle = <&sgenet0phy>;
 		};
 
 		xgenet1: ethernet@1f620000 {
@@ -658,6 +668,7 @@
 			clocks = <&xge1clk 0>;
 			local-mac-address = [00 01 73 00 00 02];
 			phy-connection-type = "xgmii";
+			phy-handle = <&sgenet1phy>;
 		};
 
 		rng: rng@10520000 {
