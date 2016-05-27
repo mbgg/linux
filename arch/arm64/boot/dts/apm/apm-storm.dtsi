@@ -237,18 +237,9 @@
 				clocks = <&socplldiv2 0>;
 				reg = <0x0 0x1f21c000 0x0 0x1000>;
 				reg-names = "csr-reg";
-				csr-mask = <0x3>;
+				csr-mask = <0xa>;
+				enable-mask = <0xf>;
 				clock-output-names = "sge0clk";
-			};
-
-			sge1clk: sge1clk@1f21c000 {
-				compatible = "apm,xgene-device-clock";
-				#clock-cells = <1>;
-				clocks = <&socplldiv2 0>;
-				reg = <0x0 0x1f21c000 0x0 0x1000>;
-				reg-names = "csr-reg";
-				csr-mask = <0xc>;
-				clock-output-names = "sge1clk";
 			};
 
 			xge0clk: xge0clk@1f61c000 {
@@ -938,9 +929,9 @@
 			reg-names = "enet_csr", "ring_csr", "ring_cmd";
 			interrupts = <0x0 0x3c 0x4>;
 			dma-coherent;
-			clocks = <&menetclk 0>;
 			/* mac address will be overwritten by the bootloader */
 			local-mac-address = [00 00 00 00 00 00];
+			clocks = <&menetclk 0>;
 			phy-connection-type = "rgmii";
 			phy-handle = <&menetphy>;
 		};
@@ -955,8 +946,8 @@
 			interrupts = <0x0 0xA0 0x4>,
 				     <0x0 0xA1 0x4>;
 			dma-coherent;
-			clocks = <&sge0clk 0>;
 			local-mac-address = [00 00 00 00 00 00];
+			clocks = <&sge0clk 0>;
 			phy-connection-type = "sgmii";
 			phy-handle = <&sgenet0phy>;
 		};
@@ -972,7 +963,6 @@
 				     <0x0 0xAD 0x4>;
 			port-id = <1>;
 			dma-coherent;
-			clocks = <&sge1clk 0>;
 			local-mac-address = [00 00 00 00 00 00];
 			phy-connection-type = "sgmii";
 			phy-handle = <&sgenet1phy>;

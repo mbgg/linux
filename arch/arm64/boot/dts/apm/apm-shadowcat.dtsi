@@ -299,17 +299,6 @@
 				clock-output-names = "pcie1clk";
 			};
 
-			xge0clk: xge0clk@1f61c000 {
-				compatible = "apm,xgene-device-clock";
-				#clock-cells = <1>;
-				clocks = <&socplldiv2 0>;
-				reg = <0x0 0x1f61c000 0x0 0x1000>;
-				reg-names = "csr-reg";
-				enable-mask = <0x3>;
-				csr-mask = <0x3>;
-				clock-output-names = "xge0clk";
-			};
-
 			xge1clk: xge1clk@1f62c000 {
 				compatible = "apm,xgene-device-clock";
 				#clock-cells = <1>;
@@ -643,7 +632,6 @@
 			interrupts = <0 96 4>,
 				     <0 97 4>;
 			dma-coherent;
-			clocks = <&xge0clk 0>;
 			local-mac-address = [00 01 73 00 00 01];
 			phy-connection-type = "sgmii";
 			phy-handle = <&sgenet0phy>;
