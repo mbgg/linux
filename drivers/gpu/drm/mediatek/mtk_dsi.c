@@ -1175,7 +1175,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	ret = drm_of_find_panel_or_bridge(dev->of_node, 0, 0,
+	ret = drm_of_find_panel_or_bridge(dev->of_node, 1, 0,
 					  &dsi->panel, &dsi->bridge);
 	if (ret)
 		goto err_unregister_host;
