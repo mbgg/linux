@@ -183,11 +183,7 @@ static int anx7688_i2c_probe(struct i2c_client *client,
 	}
 
 	anx7688->bridge.funcs = &anx7688_bridge_funcs;
-	ret = drm_bridge_add(&anx7688->bridge);
-	if (ret < 0) {
-		dev_err(&client->dev, "Failed to add drm bridge\n");
-		return ret;
-	}
+	drm_bridge_add(&anx7688->bridge);
 
 	return 0;
 }

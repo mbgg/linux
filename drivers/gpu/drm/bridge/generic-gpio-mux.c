@@ -261,11 +261,7 @@ static int gpio_display_mux_probe(struct platform_device *pdev)
 	of_node_put(port);
 
 	gpio_display_mux->bridge.funcs = &gpio_display_mux_bridge_funcs;
-	ret = drm_bridge_add(&gpio_display_mux->bridge);
-	if (ret < 0) {
-		dev_err(dev, "Failed to add drm bridge\n");
-		return ret;
-	}
+	drm_bridge_add(&gpio_display_mux->bridge);
 
 	ret = devm_request_threaded_irq(dev, gpio_display_mux->detect_irq,
 				NULL,
