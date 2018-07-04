@@ -1045,11 +1045,7 @@ static int ps8640_probe(struct i2c_client *client,
 		goto exit_remove_sysfs;
 	}
 
-	ret = drm_bridge_add(&ps_bridge->bridge);
-	if (ret) {
-		dev_err(dev, "Failed to add bridge: %d\n", ret);
-		goto exit_remove_sysfs;
-	}
+	drm_bridge_add(&ps_bridge->bridge);
 	return 0;
 
 exit_remove_sysfs:
