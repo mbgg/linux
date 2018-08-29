@@ -406,6 +406,28 @@ static bool has_ssbd_mitigation(const struct arm64_cpu_capabilities *entry,
 }
 #endif	/* CONFIG_ARM64_SSBD */
 
+#ifdef CONFIG_CAVIUM_ALLOC_ITS_TABLE_EARLY
+#include <linux/bootmem.h>
+extern void *its_base;
+
+/*
+ * Hardware that doesn't use two-level page table and exceedes
+ * the maximum order of pages that can be allocated by the buddy
+ * allocator. Try to use the memblock allocator instead.
+ * This has been observed on Cavium Thunderx machines with 4K
+ * page size.
+ */
+static bool __init needs_its_early_alloc(const struct arm64_cpu_capabilities *cap,
+		       int scope)
+{
+	/* We need to allocate the table only once */
+	if (scope & ARM64_CPUCAP_SCOPE_BOOT_CPU && !its_base)
+		its_base = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 64 * SZ_1K);
+
+	return true;
+}
+#endif /* CONFIG_CAVIUM_ALLOC_ITS_TABLE_EARLY */
+
 #define CAP_MIDR_RANGE(model, v_min, r_min, v_max, r_max)	\
 	.matches = is_affected_midr_range,			\
 	.midr_range = MIDR_RANGE(model, v_min, r_min, v_max, r_max)
@@ -668,6 +690,16 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 		.capability = ARM64_SSBD,
 		.type = ARM64_CPUCAP_LOCAL_CPU_ERRATUM,
 		.matches = has_ssbd_mitigation,
+	},
+#endif
+#ifdef CONFIG_CAVIUM_ALLOC_ITS_TABLE_EARLY
+	{
+		/* Cavium ThunderX, pass 1.x - 2.1 */
+		.desc = "Cavium alloc ITS table early",
+		.capability = ARM64_WORKAROUND_CAVIUM_ITS_TABLE,
+		.type = ARM64_CPUCAP_SCOPE_BOOT_CPU,
+		.matches = needs_its_early_alloc,
+		.midr_range = MIDR_RANGE(MIDR_THUNDERX, 0, 0, 1, 1),
 	},
 #endif
 	{

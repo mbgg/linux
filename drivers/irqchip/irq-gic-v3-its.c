@@ -85,6 +85,8 @@ struct its_baser {
 	u32		psz;
 };
 
+void *its_base;
+
 struct its_device;
 
 /*
@@ -1598,7 +1600,7 @@ static void its_write_baser(struct its_node *its, struct its_baser *baser,
 	baser->val = its_read_baser(its, baser);
 }
 
-static int its_setup_baser(struct its_node *its, struct its_baser *baser,
+static int __init its_setup_baser(struct its_node *its, struct its_baser *baser,
 			   u64 cache, u64 shr, u32 psz, u32 order,
 			   bool indirect)
 {
@@ -1607,7 +1609,6 @@ static int its_setup_baser(struct its_node *its, struct its_baser *baser,
 	u64 type = GITS_BASER_TYPE(val);
 	u64 baser_phys, tmp;
 	u32 alloc_pages;
-	void *base;
 
 retry_alloc_baser:
 	alloc_pages = (PAGE_ORDER_TO_SIZE(order) / psz);
@@ -1619,11 +1620,20 @@ retry_alloc_baser:
 		order = get_order(GITS_BASER_PAGES_MAX * psz);
 	}
 
-	base = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
-	if (!base)
-		return -ENOMEM;
+	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
+		if (!its_base) {
+			pr_warn("ITS@%pa: %s Allocation using memblock failed %pS\n",
+					&its->phys_base, its_base_type_string[type], its_base);
+			return -ENOMEM;
+		}
 
-	baser_phys = virt_to_phys(base);
+	} else {
+		its_base = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
+		if (!its_base)
+			return -ENOMEM;
+	}
+
+	baser_phys = virt_to_phys(its_base);
 
 	/* Check if the physical address of the memory is above 48bits */
 	if (IS_ENABLED(CONFIG_ARM64_64K_PAGES) && (baser_phys >> 48)) {
@@ -1631,7 +1641,7 @@ retry_alloc_baser:
 		/* 52bit PA is supported only when PageSize=64K */
 		if (psz != SZ_64K) {
 			pr_err("ITS: no 52bit PA support when psz=%d\n", psz);
-			free_pages((unsigned long)base, order);
+			free_pages((unsigned long)its_base, order);
 			return -ENXIO;
 		}
 
@@ -1676,7 +1686,7 @@ retry_baser:
 		shr = tmp & GITS_BASER_SHAREABILITY_MASK;
 		if (!shr) {
 			cache = GITS_BASER_nC;
-			gic_flush_dcache_to_poc(base, PAGE_ORDER_TO_SIZE(order));
+			gic_flush_dcache_to_poc(its_base, PAGE_ORDER_TO_SIZE(order));
 		}
 		goto retry_baser;
 	}
@@ -1687,7 +1697,7 @@ retry_baser:
 		 * size and retry. If we reach 4K, then
 		 * something is horribly wrong...
 		 */
-		free_pages((unsigned long)base, order);
+		free_pages((unsigned long)its_base, order);
 		baser->base = NULL;
 
 		switch (psz) {
@@ -1704,19 +1714,19 @@ retry_baser:
 		pr_err("ITS@%pa: %s doesn't stick: %llx %llx\n",
 		       &its->phys_base, its_base_type_string[type],
 		       val, tmp);
-		free_pages((unsigned long)base, order);
+		free_pages((unsigned long)its_base, order);
 		return -ENXIO;
 	}
 
 	baser->order = order;
-	baser->base = base;
+	baser->base = its_base;
 	baser->psz = psz;
 	tmp = indirect ? GITS_LVL1_ENTRY_SIZE : esz;
 
 	pr_info("ITS@%pa: allocated %d %s @%lx (%s, esz %d, psz %dK, shr %d)\n",
 		&its->phys_base, (int)(PAGE_ORDER_TO_SIZE(order) / (int)tmp),
 		its_base_type_string[type],
-		(unsigned long)virt_to_phys(base),
+		(unsigned long)virt_to_phys(its_base),
 		indirect ? "indirect" : "flat", (int)esz,
 		psz / SZ_1K, (int)shr >> GITS_BASER_SHAREABILITY_SHIFT);
 
@@ -1764,12 +1774,14 @@ static bool its_parse_indirect_baser(struct its_node *its,
 	 * feature is not supported by hardware.
 	 */
 	new_order = max_t(u32, get_order(esz << ids), new_order);
-	if (new_order >= MAX_ORDER) {
-		new_order = MAX_ORDER - 1;
-		ids = ilog2(PAGE_ORDER_TO_SIZE(new_order) / (int)esz);
-		pr_warn("ITS@%pa: %s Table too large, reduce ids %u->%u\n",
-			&its->phys_base, its_base_type_string[type],
-			its->device_ids, ids);
+	if (!cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
+		if (new_order >= MAX_ORDER) {
+			new_order = MAX_ORDER - 1;
+			ids = ilog2(PAGE_ORDER_TO_SIZE(new_order) / (int)esz);
+			pr_warn("ITS@%pa: %s Table too large, reduce ids %u->%u\n",
+				&its->phys_base, its_base_type_string[type],
+				its->device_ids, ids);
+		}
 	}
 
 	*order = new_order;
