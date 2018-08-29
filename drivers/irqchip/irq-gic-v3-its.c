@@ -1635,9 +1635,9 @@ retry_alloc_baser:
 			return -ENOMEM;
 		}
 
-		base = phys_to_virt(baser_phys);
+		base = __va(baser_phys);
 		/* Allocated memory must be zeroed, ITS may behave undefined */
-		//memset(base, 0, size);
+		memset(base, 0, size);
 //		pages = virt_to_page(base);
 //		for (i = 0; i < count; i++)
 //			clear_highpage(pages + i);
