@@ -597,6 +597,18 @@ config QCOM_FALKOR_ERRATUM_E1041
 
 	  If unsure, say Y.
 
+config CAVIUM_ALLOC_ITS_TABLE_EARLY
+	bool "Cavium Thunderx: Allocate the its table early"
+	default y
+	depends on ARM64_4K_PAGES && FORCE_MAX_ZONEORDER < 13
+	depends on ARM_GIC_V3_ITS
+	help
+	  Cavium Thunderx needs to allocate 16MB of ITS translation table.
+	  This can be bigger as MAX_ZONE_ORDER and need therefore be done
+	  via the memblock allocator.
+
+	  If unsure, say Y.
+
 endmenu
 
 
