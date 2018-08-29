@@ -21,6 +21,7 @@
 #include <linux/cpu.h>
 #include <linux/delay.h>
 #include <linux/dma-iommu.h>
+#include <linux/highmem.h>
 #include <linux/interrupt.h>
 #include <linux/irqdomain.h>
 #include <linux/log2.h>
@@ -48,6 +49,7 @@
 #define ITS_FLAGS_WORKAROUND_CAVIUM_22375	(1ULL << 1)
 #define ITS_FLAGS_WORKAROUND_CAVIUM_23144	(1ULL << 2)
 #define ITS_FLAGS_SAVE_SUSPEND_STATE		(1ULL << 3)
+#define ITS_FLAGS_USE_MEMBLOCK			(1ULL << 4)
 
 #define RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING	(1 << 0)
 
@@ -1598,7 +1600,7 @@ static void its_write_baser(struct its_node *its, struct its_baser *baser,
 	baser->val = its_read_baser(its, baser);
 }
 
-static int its_setup_baser(struct its_node *its, struct its_baser *baser,
+static int __init its_setup_baser(struct its_node *its, struct its_baser *baser,
 			   u64 cache, u64 shr, u32 psz, u32 order,
 			   bool indirect)
 {
@@ -1608,6 +1610,7 @@ static int its_setup_baser(struct its_node *its, struct its_baser *baser,
 	u64 baser_phys, tmp;
 	u32 alloc_pages;
 	void *base;
+
 
 retry_alloc_baser:
 	alloc_pages = (PAGE_ORDER_TO_SIZE(order) / psz);
@@ -1619,11 +1622,33 @@ retry_alloc_baser:
 		order = get_order(GITS_BASER_PAGES_MAX * psz);
 	}
 
-	base = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
-	if (!base)
-		return -ENOMEM;
+	if (its->flags & ITS_FLAGS_USE_MEMBLOCK) {
+		phys_addr_t size;
+//		unsigned int i, count = 1 << order;
+//		struct page *pages;
 
-	baser_phys = virt_to_phys(base);
+		size = PAGE_ORDER_TO_SIZE(order);
+		baser_phys = memblock_alloc(size, (phys_addr_t) psz);
+		if (!baser_phys) {
+			pr_warn("ITS@%pa: %s Allocation using memblock failed\n",
+					&its->phys_base, its_base_type_string[type]);
+			return -ENOMEM;
+		}
+
+		base = phys_to_virt(baser_phys);
+		/* Allocated memory must be zeroed, ITS may behave undefined */
+		//memset(base, 0, size);
+//		pages = virt_to_page(base);
+//		for (i = 0; i < count; i++)
+//			clear_highpage(pages + i);
+	} else {
+		base = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
+		if (!base)
+			return -ENOMEM;
+
+		baser_phys = virt_to_phys(base);
+	}
+
 
 	/* Check if the physical address of the memory is above 48bits */
 	if (IS_ENABLED(CONFIG_ARM64_64K_PAGES) && (baser_phys >> 48)) {
@@ -1765,11 +1790,17 @@ static bool its_parse_indirect_baser(struct its_node *its,
 	 */
 	new_order = max_t(u32, get_order(esz << ids), new_order);
 	if (new_order >= MAX_ORDER) {
-		new_order = MAX_ORDER - 1;
-		ids = ilog2(PAGE_ORDER_TO_SIZE(new_order) / (int)esz);
-		pr_warn("ITS@%pa: %s Table too large, reduce ids %u->%u\n",
-			&its->phys_base, its_base_type_string[type],
-			its->device_ids, ids);
+
+		/*
+		 * Hardware that doesn't use two-level page table might exceed
+		 * the maximum order of pages that can be allocated by the buddy
+		 * allocator. Try to use the memblock allocator instead.
+		 * This has been observed on Cavium Thunderx machines with 4K
+		 * page size.
+		 */
+		its->flags |= ITS_FLAGS_USE_MEMBLOCK;
+		pr_warn("ITS@%pa: %s Try to use memblock allocator\n",
+			&its->phys_base, its_base_type_string[type]);
 	}
 
 	*order = new_order;
