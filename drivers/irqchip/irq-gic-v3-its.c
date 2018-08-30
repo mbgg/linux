@@ -18,6 +18,7 @@
 #include <linux/acpi.h>
 #include <linux/acpi_iort.h>
 #include <linux/bitmap.h>
+#include <linux/bootmem.h>
 #include <linux/cpu.h>
 #include <linux/delay.h>
 #include <linux/dma-iommu.h>
@@ -1626,8 +1627,8 @@ retry_alloc_baser:
 		phys_addr_t size;
 
 		size = PAGE_ORDER_TO_SIZE(order);
-		baser = memblock_virt_alloc_nopanic(size, (phys_addr_t) psz);
-		if (!baser) {
+		base = (void *)memblock_virt_alloc_nopanic(size, psz);
+		if (!base) {
 			pr_warn("ITS@%pa: %s Allocation using memblock failed\n",
 					&its->phys_base, its_base_type_string[type]);
 			return -ENOMEM;
