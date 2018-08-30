@@ -1624,31 +1624,22 @@ retry_alloc_baser:
 
 	if (its->flags & ITS_FLAGS_USE_MEMBLOCK) {
 		phys_addr_t size;
-//		unsigned int i, count = 1 << order;
-//		struct page *pages;
 
 		size = PAGE_ORDER_TO_SIZE(order);
-		baser_phys = memblock_alloc(size, (phys_addr_t) psz);
-		if (!baser_phys) {
+		baser = memblock_virt_alloc_nopanic(size, (phys_addr_t) psz);
+		if (!baser) {
 			pr_warn("ITS@%pa: %s Allocation using memblock failed\n",
 					&its->phys_base, its_base_type_string[type]);
 			return -ENOMEM;
 		}
 
-		base = __va(baser_phys);
-		/* Allocated memory must be zeroed, ITS may behave undefined */
-		memset(base, 0, size);
-//		pages = virt_to_page(base);
-//		for (i = 0; i < count; i++)
-//			clear_highpage(pages + i);
 	} else {
 		base = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
 		if (!base)
 			return -ENOMEM;
-
-		baser_phys = virt_to_phys(base);
 	}
 
+	baser_phys = virt_to_phys(base);
 
 	/* Check if the physical address of the memory is above 48bits */
 	if (IS_ENABLED(CONFIG_ARM64_64K_PAGES) && (baser_phys >> 48)) {
