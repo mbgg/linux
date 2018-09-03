@@ -1625,11 +1625,7 @@ retry_alloc_baser:
 		order = get_order(GITS_BASER_PAGES_MAX * psz);
 	}
 
-	if (its->flags & ITS_FLAGS_USE_MEMBLOCK) {
-//		phys_addr_t size;
-
-//		size = PAGE_ORDER_TO_SIZE(order);
-//		base = (void *)memblock_virt_alloc_nopanic(size, psz);
+	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
 		base = base_ptr;
 		if (!base) {
 			pr_warn("ITS@%pa: %s Allocation using memblock failed\n",
@@ -1784,18 +1780,13 @@ static bool its_parse_indirect_baser(struct its_node *its,
 	 * feature is not supported by hardware.
 	 */
 	new_order = max_t(u32, get_order(esz << ids), new_order);
-	if (new_order >= MAX_ORDER) {
-
-		/*
-		 * Hardware that doesn't use two-level page table might exceed
-		 * the maximum order of pages that can be allocated by the buddy
-		 * allocator. Try to use the memblock allocator instead.
-		 * This has been observed on Cavium Thunderx machines with 4K
-		 * page size.
-		 */
-		its->flags |= ITS_FLAGS_USE_MEMBLOCK;
-		pr_warn("ITS@%pa: %s Try to use memblock allocator\n",
-			&its->phys_base, its_base_type_string[type]);
+	if ((new_order >= MAX_ORDER) &&
+			!cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
+		new_order = MAX_ORDER - 1;
+		ids = ilog2(PAGE_ORDER_TO_SIZE(new_order) / (int)esz);
+		pr_warn("ITS@%pa: %s Table too large, reduce ids %u->%u\n",
+		        &its->phys_base, its_base_type_string[type],
+		        its->device_ids, ids);
 	}
 
 	*order = new_order;
@@ -2957,7 +2948,7 @@ static bool __maybe_unused its_enable_quirk_cavium_22375(void *data)
 {
 	struct its_node *its = data;
 
-	/* erratum 22375: only allo64 * sz_1KBMB table size */
+	/* erratum 22375: only alloc 8MB table size */
 	its->device_ids = 0x14;		/* 20 bits, 8MB */
 	its->flags |= ITS_FLAGS_WORKAROUND_CAVIUM_22375;
 
@@ -3708,10 +3699,16 @@ static void __init its_acpi_probe(void) { }
 #endif
 
 #ifdef CONFIG_ARM64_4K_PAGES
+/*
+ * Hardware that doesn't use two-level page table and exceedes
+ * the maximum order of pages that can be allocated by the buddy
+ * allocator. Try to use the memblock allocator instead.
+ * This has been observed on Cavium Thunderx machines with 4K
+ * page size.
+ */
 void __init its_alloc_table_early()
 {
-	pr_info("ITS: Alloc ITS table early\n");
-	base_ptr = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 64 * SZ_1K);
+	base_ptr = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 0);
 }
 #endif
 
