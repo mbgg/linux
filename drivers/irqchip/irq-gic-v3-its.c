@@ -88,6 +88,8 @@ struct its_baser {
 	u32		psz;
 };
 
+void *base_ptr;
+
 struct its_device;
 
 /*
@@ -1624,10 +1626,11 @@ retry_alloc_baser:
 	}
 
 	if (its->flags & ITS_FLAGS_USE_MEMBLOCK) {
-		phys_addr_t size;
+//		phys_addr_t size;
 
-		size = PAGE_ORDER_TO_SIZE(order);
-		base = (void *)memblock_virt_alloc_nopanic(size, psz);
+//		size = PAGE_ORDER_TO_SIZE(order);
+//		base = (void *)memblock_virt_alloc_nopanic(size, psz);
+		base = base_ptr;
 		if (!base) {
 			pr_warn("ITS@%pa: %s Allocation using memblock failed\n",
 					&its->phys_base, its_base_type_string[type]);
@@ -2954,7 +2957,7 @@ static bool __maybe_unused its_enable_quirk_cavium_22375(void *data)
 {
 	struct its_node *its = data;
 
-	/* erratum 22375: only alloc 8MB table size */
+	/* erratum 22375: only allo64 * sz_1KBMB table size */
 	its->device_ids = 0x14;		/* 20 bits, 8MB */
 	its->flags |= ITS_FLAGS_WORKAROUND_CAVIUM_22375;
 
@@ -3702,6 +3705,14 @@ static void __init its_acpi_probe(void)
 }
 #else
 static void __init its_acpi_probe(void) { }
+#endif
+
+#ifdef CONFIG_ARM64_4K_PAGES
+void __init its_alloc_table_early()
+{
+	pr_info("ITS: Alloc ITS table early\n");
+	base_ptr = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 64 * SZ_1K);
+}
 #endif
 
 int __init its_init(struct fwnode_handle *handle, struct rdists *rdists,
