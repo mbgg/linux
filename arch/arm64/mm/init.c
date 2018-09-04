@@ -476,6 +476,17 @@ void __init arm64_memblock_init(void)
 	else
 		arm64_dma_phys_limit = PHYS_MASK + 1;
 
+#ifdef CONFIG_ARM64_4K_PAGES
+	/*
+	 * If we run on a thunderx1 machien with 4K page size we are not
+	 * able to allocate ITS table via get_freepages. We allocate the
+	 * table early instead via the memblock interface.
+	 */
+	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
+		its_alloc_table_early();
+	}
+#endif
+
 	reserve_crashkernel();
 
 	reserve_elfcorehdr();
@@ -601,17 +612,6 @@ void __init mem_init(void)
 	free_all_bootmem();
 
 	kexec_reserve_crashkres_pages();
-
-#ifdef CONFIG_ARM64_4K_PAGES
-	/* 
-	 * If we run on a thunderx1 machien with 4K page size we are not
-	 * able to allocate ITS table via get_freepages. We allocate the
-	 * table early instead via the memblock interface.
-	 */
-	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
-		its_alloc_table_early();
-	}
-#endif
 
 	mem_init_print_info(NULL);
 
