@@ -1628,8 +1628,8 @@ retry_alloc_baser:
 	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
 		base = base_ptr;
 		if (!base) {
-			pr_warn("ITS@%pa: %s Allocation using memblock failed\n",
-					&its->phys_base, its_base_type_string[type]);
+			pr_warn("ITS@%pa: %s Allocation using memblock failed %pS\n",
+					&its->phys_base, its_base_type_string[type], base);
 			return -ENOMEM;
 		}
 
@@ -3709,6 +3709,7 @@ static void __init its_acpi_probe(void) { }
 void __init its_alloc_table_early()
 {
 	base_ptr = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 64 * SZ_1K);
+	pr_err("%s - base_ptr = %pS\n", __func__, base_ptr);
 }
 #endif
 
