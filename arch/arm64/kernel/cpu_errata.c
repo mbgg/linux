@@ -670,16 +670,6 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 		.matches = has_ssbd_mitigation,
 	},
 #endif
-#ifdef CONFIG_ARM64_4K_PAGES
-	{
-	/* Cavium ThunderX, pass 1.x - 2.1 */
-		.desc = "Cavium 4K PAGE size ITS table not allocateable",
-		.capability = ARM64_WORKAROUND_CAVIUM_ITS_TABLE,
-		ERRATA_MIDR_RANGE(MIDR_THUNDERX,
-				  0, 0,
-				  1, 1),
-	},
-#endif
 	{
 	}
 };

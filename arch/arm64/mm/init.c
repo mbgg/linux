@@ -27,7 +27,6 @@
 #include <linux/mman.h>
 #include <linux/nodemask.h>
 #include <linux/initrd.h>
-#include <linux/irqchip/arm-gic-v3.h>
 #include <linux/gfp.h>
 #include <linux/memblock.h>
 #include <linux/sort.h>
@@ -475,17 +474,6 @@ void __init arm64_memblock_init(void)
 		arm64_dma_phys_limit = max_zone_dma_phys();
 	else
 		arm64_dma_phys_limit = PHYS_MASK + 1;
-
-#ifdef CONFIG_ARM64_4K_PAGES
-	/*
-	 * If we run on a thunderx1 machien with 4K page size we are not
-	 * able to allocate ITS table via get_freepages. We allocate the
-	 * table early instead via the memblock interface.
-	 */
-	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
-		its_alloc_table_early();
-	}
-#endif
 
 	reserve_crashkernel();
 

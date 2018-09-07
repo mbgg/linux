@@ -604,10 +604,6 @@ static inline bool gic_enable_sre(void)
 	return !!(val & ICC_SRE_EL1_SRE);
 }
 
-#ifdef CONFIG_ARM64_4K_PAGES
-void its_alloc_table_early(void);
-#endif
-
 #endif
 
 #endif

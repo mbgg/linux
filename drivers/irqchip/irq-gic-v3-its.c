@@ -18,7 +18,6 @@
 #include <linux/acpi.h>
 #include <linux/acpi_iort.h>
 #include <linux/bitmap.h>
-#include <linux/bootmem.h>
 #include <linux/cpu.h>
 #include <linux/delay.h>
 #include <linux/dma-iommu.h>
@@ -88,7 +87,7 @@ struct its_baser {
 	u32		psz;
 };
 
-void *base_ptr;
+void *its_base_ptr;
 
 struct its_device;
 
@@ -1626,7 +1625,7 @@ retry_alloc_baser:
 	}
 
 	if (cpus_have_const_cap(ARM64_WORKAROUND_CAVIUM_ITS_TABLE)) {
-		base = base_ptr;
+		base = its_base_ptr;
 		if (!base) {
 			pr_warn("ITS@%pa: %s Allocation using memblock failed %pS\n",
 					&its->phys_base, its_base_type_string[type], base);
@@ -3696,21 +3695,6 @@ static void __init its_acpi_probe(void)
 }
 #else
 static void __init its_acpi_probe(void) { }
-#endif
-
-#ifdef CONFIG_ARM64_4K_PAGES
-/*
- * Hardware that doesn't use two-level page table and exceedes
- * the maximum order of pages that can be allocated by the buddy
- * allocator. Try to use the memblock allocator instead.
- * This has been observed on Cavium Thunderx machines with 4K
- * page size.
- */
-void __init its_alloc_table_early()
-{
-	base_ptr = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 64 * SZ_1K);
-	pr_err("%s - base_ptr = %pS\n", __func__, base_ptr);
-}
 #endif
 
 int __init its_init(struct fwnode_handle *handle, struct rdists *rdists,

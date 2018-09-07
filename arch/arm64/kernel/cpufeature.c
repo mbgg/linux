@@ -1026,6 +1026,28 @@ static void cpu_copy_el2regs(const struct arm64_cpu_capabilities *__unused)
 }
 #endif
 
+#ifdef CONFIG_ARM64_4K_PAGES
+#include <linux/bootmem.h>
+extern void *its_base_ptr;
+
+/*
+ * Hardware that doesn't use two-level page table and exceedes
+ * the maximum order of pages that can be allocated by the buddy
+ * allocator. Try to use the memblock allocator instead.
+ * This has been observed on Cavium Thunderx machines with 4K
+ * page size.
+ */
+static bool __init needs_its_early_alloc(const struct arm64_cpu_capabilities *cap,
+		       int scope)
+{
+	/* We need to allocate the table only once */
+	if (scope & ARM64_CPUCAP_SCOPE_BOOT_CPU && !its_base_ptr)
+		its_base_ptr = (void *)memblock_virt_alloc_nopanic(16 * SZ_1M, 64 * SZ_1K);
+
+	return true;
+}
+#endif /* CONFIG_ARM64_4K_PAGES */
+
 static const struct arm64_cpu_capabilities arm64_features[] = {
 	{
 		.desc = "GIC system register CPU interface",
@@ -1124,6 +1146,18 @@ static const struct arm64_cpu_capabilities arm64_features[] = {
 		.min_field_value = 1,
 		.matches = unmap_kernel_at_el0,
 		.cpu_enable = kpti_install_ng_mappings,
+	},
+#endif
+#ifdef CONFIG_ARM64_4K_PAGES
+	{
+		/* Cavium ThunderX, pass 1.x - 2.1 */
+		.desc = "Cavium alloc ITS table early",
+		.capability = ARM64_WORKAROUND_CAVIUM_ITS_TABLE,
+		.type = ARM64_CPUCAP_SCOPE_BOOT_CPU,
+		.matches = needs_its_early_alloc,
+//		ERRATA_MIDR_RANGE(MIDR_THUNDERX,
+//				  0, 0,
+//				  1, 1),
 	},
 #endif
 	{
