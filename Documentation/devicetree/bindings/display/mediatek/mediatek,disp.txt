@@ -52,6 +52,10 @@ Required properties (all function blocks):
   DPI controller nodes have multiple clock inputs. These are documented in
   mediatek,dsi.txt and mediatek,dpi.txt, respectively.
 
+Some chips have a separate binding for the clock controller, which is a child node
+of the mmsys device, for more information see:
+Documentation/devicetree/bindings/arm/mediatek/mediatek,mmsys.txt
+
 Required properties (DMA function blocks):
 - compatible: Should be one of
 	"mediatek,<chip>-disp-ovl"
