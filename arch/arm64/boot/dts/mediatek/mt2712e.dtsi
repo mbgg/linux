@@ -859,9 +859,13 @@
 	};
 
 	mmsys: syscon@14000000 {
-		compatible = "mediatek,mt2712-mmsys", "syscon";
+		compatible = "mediatek,mt2712-mmsys", "syscon", "simple-mfd";
 		reg = <0 0x14000000 0 0x1000>;
-		#clock-cells = <1>;
+
+		mmsys_clk: clock-controller@14000000 {
+			compatible = "mediatek,mt2712-mmsys-clk";
+			#clock-cells = <1>;
+		};
 	};
 
 	larb0: larb@14021000 {
