@@ -234,9 +234,13 @@
 	};
 
 	mmsys: mmsys_config@14000000 {
-		compatible = "mediatek,mt6797-mmsys", "syscon";
+		compatible = "mediatek,mt6797-mmsys", "syscon", "simple-mfd";
 		reg = <0 0x14000000 0 0x1000>;
-		#clock-cells = <1>;
+
+		mmsys_clk: clock-controller@14000000 {
+			compatible = "mediatek,mt6797-mmsys-clk";
+			#clock-cells = <1>;
+		};
 	};
 
 	imgsys: imgsys_config@15000000  {
