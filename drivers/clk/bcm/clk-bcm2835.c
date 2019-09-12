@@ -2258,6 +2258,7 @@ static const struct cprman_plat_data cprman_bcm2711_plat_data = {
 static const struct of_device_id bcm2835_clk_of_match[] = {
 	{ .compatible = "brcm,bcm2835-cprman", .data = &cprman_bcm2835_plat_data },
 	{ .compatible = "brcm,bcm2711-cprman", .data = &cprman_bcm2711_plat_data },
+	{ .compatible = "brcm,bcm3838-cprman", .data = &cprman_bcm2711_plat_data },
 	{}
 };
 MODULE_DEVICE_TABLE(of, bcm2835_clk_of_match);

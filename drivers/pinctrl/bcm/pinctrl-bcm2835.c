@@ -1079,6 +1079,10 @@ static const struct of_device_id bcm2835_pinctrl_match[] = {
 		.compatible = "brcm,bcm2711-gpio",
 		.data = &bcm2711_pinconf_ops,
 	},
+	{
+		.compatible = "brcm,bcm2838-gpio",
+		.data = &bcm2711_pinconf_ops,
+	},
 	{}
 };
 
