@@ -117,7 +117,6 @@ static int clk_mt2701_mm_remove(struct platform_device *pdev)
 	struct clk_mt2701_mm_priv *private = platform_get_drvdata(pdev);
 
 	kfree(private->clk_data);
-	kfree(private);
 
 	return 0;
 }

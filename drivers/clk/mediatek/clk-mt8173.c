@@ -1157,6 +1157,8 @@ static int mtk_mmsys_probe(struct platform_device *pdev)
 	struct device_node *node;
 	struct mtk_mmsys_priv *private;
 
+	printk(KERN_ERR"test %s\n", __func__);
+
 	node = pdev->dev.parent->of_node;
 
 	private = devm_kzalloc(&pdev->dev, sizeof(*private), GFP_KERNEL);
@@ -1181,10 +1183,11 @@ static int mtk_mmsys_probe(struct platform_device *pdev)
 
 static int mtk_mmsys_remove(struct platform_device *pdev)
 {
-	struct mtk_mmsys_priv *private = platform_get_drvdata(pdev);
+	struct mtk_mmsys_priv *private;
+	printk(KERN_ERR"%s\n", __func__);
+	private = platform_get_drvdata(pdev);
 
 	kfree(private->clk_data);
-	kfree(private);
 
 	return 0;
 }
