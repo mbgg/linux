@@ -663,6 +663,7 @@ struct bcmgenet_priv {
 	bool crc_fwd_en;
 
 	unsigned int dma_rx_chk_bit;
+	unsigned int dma_max_burst_length;
 
 	u32 msg_enable;
 
