@@ -30,6 +30,8 @@ Optional properties:
   See Documentation/devicetree/bindings/net/fixed-link.txt for information on
   the property specifics
 
+- dma-burst-sz: Maximal length of a burst.
+
 Required child nodes:
 
 - mdio bus node: this node should always be present regardless of the PHY
