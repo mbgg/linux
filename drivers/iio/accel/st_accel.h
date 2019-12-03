@@ -61,6 +61,7 @@ enum st_accel_type {
 #define LIS3DE_ACCEL_DEV_NAME		"lis3de"
 #define LIS2DE12_ACCEL_DEV_NAME		"lis2de12"
 #define LIS2HH12_ACCEL_DEV_NAME		"lis2hh12"
+#define LSM9DS1_ACCEL_DEV_NAME		"lsm9ds1"
 
 /**
 * struct st_sensors_platform_data - default accel platform data
