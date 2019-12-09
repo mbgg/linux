@@ -15,6 +15,7 @@
 
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <drm/drm_bridge.h>
 #include <drm/drm_crtc.h>
 
 /* Register addresses */

@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/of_graph.h>
+#include <drm/drm_bridge.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_probe_helper.h>
