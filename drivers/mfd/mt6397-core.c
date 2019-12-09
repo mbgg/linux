@@ -114,21 +114,6 @@ static const struct chip_data mt6397_core = {
 	.cid_shift = 0,
 };
 
-struct chip_data {
-	u32 cid_addr;
-	u32 cid_shift;
-};
-
-static const struct chip_data mt6323_core = {
-	.cid_addr = MT6323_CID,
-	.cid_shift = 0,
-};
-
-static const struct chip_data mt6397_core = {
-	.cid_addr = MT6397_CID,
-	.cid_shift = 0,
-};
-
 static int mt6397_probe(struct platform_device *pdev)
 {
 	int ret;
