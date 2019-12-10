@@ -22,12 +22,6 @@
 #define CROS_EC_DEV_TP_NAME	"cros_tp"
 
 /*
- * The EC is unresponsive for a time after a reboot command.  Add a
- * simple delay to make sure that the bus stays locked.
- */
-#define EC_REBOOT_DELAY_MS		50
-
-/*
  * Max bus-specific overhead incurred by request/responses.
  * I2C requires 1 additional byte for requests.
  * I2C requires 2 additional bytes for responses.
@@ -206,10 +200,6 @@ struct cros_ec_dev {
 
 #define to_cros_ec_dev(dev)  container_of(dev, struct cros_ec_dev, class_dev)
 
-int cros_ec_suspend(struct cros_ec_device *ec_dev);
-
-int cros_ec_resume(struct cros_ec_device *ec_dev);
-
 int cros_ec_prepare_tx(struct cros_ec_device *ec_dev,
 		       struct cros_ec_command *msg);
 
@@ -222,10 +212,6 @@ int cros_ec_cmd_xfer(struct cros_ec_device *ec_dev,
 int cros_ec_cmd_xfer_status(struct cros_ec_device *ec_dev,
 			    struct cros_ec_command *msg);
 
-int cros_ec_register(struct cros_ec_device *ec_dev);
-
-int cros_ec_unregister(struct cros_ec_device *ec_dev);
-
 int cros_ec_query_all(struct cros_ec_device *ec_dev);
 
 int cros_ec_get_next_event(struct cros_ec_device *ec_dev,
@@ -237,8 +223,6 @@ u32 cros_ec_get_host_event(struct cros_ec_device *ec_dev);
 int cros_ec_check_features(struct cros_ec_dev *ec, int feature);
 
 int cros_ec_get_sensor_count(struct cros_ec_dev *ec);
-
-bool cros_ec_handle_event(struct cros_ec_device *ec_dev);
 
 /**
  * cros_ec_get_time_ns() - Return time in ns.
