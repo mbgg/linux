@@ -476,7 +476,7 @@
 	sdr104-clk-delay = <5>;
 	keep-power-in-suspend;
 	enable-sdio-wakeup;
-	cap-sdio-irq;
+/*	cap-sdio-irq; */
 	vmmc-supply = <&sdio_fixed_3v3>;
 	vqmmc-supply = <&mt6397_vgp3_reg>;
 	non-removable;
