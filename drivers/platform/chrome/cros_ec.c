@@ -19,6 +19,8 @@
 
 #include "cros_ec.h"
 
+#include "cros_ec.h"
+
 #define CROS_EC_DEV_EC_INDEX 0
 #define CROS_EC_DEV_PD_INDEX 1
 
