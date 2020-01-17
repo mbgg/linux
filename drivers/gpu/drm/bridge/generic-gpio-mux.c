@@ -82,8 +82,8 @@ static bool gpio_display_mux_mode_fixup(struct drm_bridge *bridge,
 }
 
 static void gpio_display_mux_mode_set(struct drm_bridge *bridge,
-				struct drm_display_mode *mode,
-				struct drm_display_mode *adjusted_mode)
+				const struct drm_display_mode *mode,
+				const struct drm_display_mode *adjusted_mode)
 {
 	struct gpio_display_mux *gpio_display_mux =
 		bridge_to_gpio_display_mux(bridge);
