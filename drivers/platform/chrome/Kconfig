@@ -228,7 +228,8 @@ config CROS_USBPD_LOGGER
 
 config CROS_USBPD_NOTIFY
 	tristate "ChromeOS Type-C power delivery event notifier"
-	depends on CROS_EC
+	depends on MFD_CROS_EC_DEV
+	default MFD_CROS_EC_DEV
 	help
 	  If you say Y here, you get support for Type-C PD event notifications
 	  from the ChromeOS EC. On ACPI platorms this driver will bind to the
