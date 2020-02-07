@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: GPL-2.0
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/chrome/google,cros-ec-typec.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Google Chrome OS EC(Embedded Controller) Type C port driver.
+
+maintainers:
+  - Benson Leung <bleung@chromium.org>
+  - Prashant Malani <pmalani@chromium.org>
+
+description:
+  Chrome OS devices have an Embedded Controller(EC) which has access to
+  Type C port state. This node is intended to allow the host to read and
+  control the Type C ports. The node for this device should be under a
+  cros-ec node like google,cros-ec-spi.
+
+properties:
+  compatible:
+    const: google,cros-ec-typec
+
+  port:
+    description: A node that represents a physical Type C port on the
+      device.
+    type: object
+    properties:
+      port-number:
+        description: The number used by the Chrome OS EC to identify
+          this type C port.
+        $ref: /schemas/types.yaml#/definitions/uint32
+      power-role:
+        description: Determines the power role that the Type C port will
+          adopt.
+        oneOf:
+          - items:
+            - const: sink
+            - const: source
+            - const: dual
+      data-role:
+        description: Determines the data role that the Type C port will
+          adopt.
+        oneOf:
+          - items:
+            - const: host
+            - const: device
+            - const: dual
+      try-power-role:
+        description: Determines the preferred power role of the Type C port.
+        oneOf:
+          - items:
+            - const: sink
+            - const: source
+            - const: dual
+
+    required:
+      - port-number
+      - power-role
+      - data-role
+      - try-power-role
+
+required:
+  - compatible
+  - port
+
+examples:
+  - |+
+    typec {
+      compatible = "google,cros-ec-typec";
+
+      port@0 {
+        port-number = <0>;
+        power-role = "dual";
+        data-role = "dual";
+        try-power-role = "source";
+      };
+    };
