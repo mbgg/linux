@@ -440,16 +440,74 @@
 			};
 		};
 
-		scpsys: scpsys@10006000 {
-			compatible = "mediatek,mt8173-scpsys";
+		scpsys: power-controller@10006000 {
+			compatible = "mediatek,mt8173-scpsys-ng";
 			#power-domain-cells = <1>;
 			reg = <0 0x10006000 0 0x1000>;
-			clocks = <&clk26m>,
-				 <&topckgen CLK_TOP_MM_SEL>,
-				 <&topckgen CLK_TOP_VENC_SEL>,
-				 <&topckgen CLK_TOP_VENC_LT_SEL>;
-			clock-names = "mfg", "mm", "venc", "venc_lt";
 			infracfg = <&infracfg>;
+
+
+			/* power domains of the SoC */
+			vdec@PD_DOMAIN_VDEC {
+				clocks = <&topckgen CLK_TOP_MM_SEL>;
+				reg = <MT8173_POWER_DOMAIN_VDEC>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			venc@PD_DOMAIN_VENC {
+				clocks = <&topckgen CLK_TOP_MM_SEL>,
+					 <&topckgen CLK_TOP_VENC_SEL>;
+				reg = <MT8173_POWER_DOMAIN_VENC>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			isp@PD_DOMAIN_ISP {
+				clocks = <&topckgen CLK_TOP_MM_SEL>;
+				reg = <MT8173_POWER_DOMAIN_ISP>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			mm@PD_DOMAIN_MM {
+				clocks = <&topckgen CLK_TOP_MM_SEL>;
+				reg = <MT8173_POWER_DOMAIN_MM>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			venc_lt@PD_DOMAIN_VENC_lt {
+				clocks = <&topckgen CLK_TOP_MM_SEL>,
+					 <&topckgen CLK_TOP_VENC_LT_SEL>;
+				reg = <MT8173_POWER_DOMAIN_VENC>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			audio@PD_DOMAIN_AUDIO {
+				reg = <MT8173_POWER_DOMAIN_AUDIO>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			usb@PD_DOMAIN_USB {
+				reg = <MT8173_POWER_DOMAIN_USB>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+			mfg_async@PD_DOMAIN_MFG_ASYNC {
+				clocks = <&clk26m>;
+				reg = <MT8173_POWER_DOMAIN_MFG_ASYNC>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				mfg_2d@PD_DOMAIN_MFG_2D {
+					reg = <MT8173_POWER_DOMAIN_MFG_2D>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					mfg@PD_DOMAIN_MFG {
+						reg = <MT8173_POWER_DOMAIN_MFG>;
+						#address-cells = <1>;
+						#size-cells = <0>;
+					};
+				};
+			};
 		};
 
 		watchdog: watchdog@10007000 {
