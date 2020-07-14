@@ -54,22 +54,27 @@
 #define PWR_STATUS_AUDIO		BIT(24)
 #define PWR_STATUS_USB			BIT(25)
 
+struct scpsys_bus_prot_data {
+	u32 bus_prot_mask;
+	bool bus_prot_reg_update;
+};
+
 /**
  * struct scpsys_domain_data - scp domain data for power on/off flow
  * @sta_mask: The mask for power on/off status bit.
  * @ctl_offs: The offset for main power control register.
  * @sram_pdn_bits: The mask for sram power control bits.
  * @sram_pdn_ack_bits: The mask for sram power control acked bits.
- * @bus_prot_mask: The mask for single step bus protection.
  * @caps: The flag for active wake-up action.
+ * @bp_infracfg: bus protection for infracfg subsystem
  */
 struct scpsys_domain_data {
 	u32 sta_mask;
 	int ctl_offs;
 	u32 sram_pdn_bits;
 	u32 sram_pdn_ack_bits;
-	u32 bus_prot_mask;
 	u8 caps;
+	const struct scpsys_bus_prot_data bp_infracfg;
 };
 
 struct scpsys_domain {
@@ -78,6 +83,7 @@ struct scpsys_domain {
 	struct scpsys *scpsys;
 	int num_clks;
 	struct clk_bulk_data *clks;
+	struct regmap *infracfg;
 };
 
 struct scpsys_soc_data {
@@ -85,13 +91,11 @@ struct scpsys_soc_data {
 	int num_domains;
 	int pwr_sta_offs;
 	int pwr_sta2nd_offs;
-	bool bus_prot_reg_update;
 };
 
 struct scpsys {
 	struct device *dev;
 	void __iomem *base;
-	struct regmap *infracfg;
 	const struct scpsys_soc_data *soc_data;
 	struct genpd_onecell_data pd_data;
 	struct generic_pm_domain *domains[];
@@ -156,24 +160,24 @@ static int scpsys_sram_disable(struct scpsys_domain *pd, void __iomem *ctl_addr)
 
 static int scpsys_bus_protect_enable(struct scpsys_domain *pd)
 {
-	struct scpsys *scpsys = pd->scpsys;
+	const struct scpsys_bus_prot_data *bp_data = &pd->data->bp_infracfg;
 
-	if (!pd->data->bus_prot_mask)
+	if (!bp_data->bus_prot_mask)
 		return 0;
 
-	return mtk_infracfg_set_bus_protection(scpsys->infracfg, pd->data->bus_prot_mask,
-					       scpsys->soc_data->bus_prot_reg_update);
+	return mtk_infracfg_set_bus_protection(pd->infracfg, bp_data->bus_prot_mask,
+					       bp_data->bus_prot_reg_update);
 }
 
 static int scpsys_bus_protect_disable(struct scpsys_domain *pd)
 {
-	struct scpsys *scpsys = pd->scpsys;
+	const struct scpsys_bus_prot_data *bp_data = &pd->data->bp_infracfg;
 
-	if (!pd->data->bus_prot_mask)
+	if (!bp_data->bus_prot_mask)
 		return 0;
 
-	return mtk_infracfg_clear_bus_protection(scpsys->infracfg, pd->data->bus_prot_mask,
-						 scpsys->soc_data->bus_prot_reg_update);
+	return mtk_infracfg_clear_bus_protection(pd->infracfg, bp_data->bus_prot_mask,
+						 bp_data->bus_prot_reg_update);
 }
 
 static int scpsys_power_on(struct generic_pm_domain *genpd)
@@ -302,6 +306,12 @@ static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node
 
 	pd->data = domain_data;
 	pd->scpsys = scpsys;
+
+	pd->infracfg = syscon_regmap_lookup_by_phandle(node, "mediatek,infracfg");
+	if (IS_ERR(pd->infracfg)) {
+		pd->infracfg = NULL;
+	}
+
 	pd->num_clks = of_clk_get_parent_count(node);
 	if (pd->num_clks > 0) {
 		pd->clks = devm_kcalloc(scpsys->dev, pd->num_clks, sizeof(*pd->clks), GFP_KERNEL);
@@ -471,8 +481,11 @@ static const struct scpsys_domain_data scpsys_domain_data_mt8173[] = {
 		.ctl_offs = SPM_DIS_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(12, 12),
-		.bus_prot_mask = MT8173_TOP_AXI_PROT_EN_MM_M0 |
-			MT8173_TOP_AXI_PROT_EN_MM_M1,
+		.bp_infracfg = {
+			.bus_prot_reg_update = true,
+			.bus_prot_mask = MT8173_TOP_AXI_PROT_EN_MM_M0 |
+				MT8173_TOP_AXI_PROT_EN_MM_M1,
+		},
 	},
 	[MT8173_POWER_DOMAIN_VENC_LT] = {
 		.sta_mask = PWR_STATUS_VENC_LT,
@@ -510,10 +523,13 @@ static const struct scpsys_domain_data scpsys_domain_data_mt8173[] = {
 		.ctl_offs = SPM_MFG_PWR_CON,
 		.sram_pdn_bits = GENMASK(13, 8),
 		.sram_pdn_ack_bits = GENMASK(21, 16),
-		.bus_prot_mask = MT8173_TOP_AXI_PROT_EN_MFG_S |
-			MT8173_TOP_AXI_PROT_EN_MFG_M0 |
-			MT8173_TOP_AXI_PROT_EN_MFG_M1 |
-			MT8173_TOP_AXI_PROT_EN_MFG_SNOOP_OUT,
+		.bp_infracfg = {
+			.bus_prot_reg_update = true,
+			.bus_prot_mask = MT8173_TOP_AXI_PROT_EN_MFG_S |
+				MT8173_TOP_AXI_PROT_EN_MFG_M0 |
+				MT8173_TOP_AXI_PROT_EN_MFG_M1 |
+				MT8173_TOP_AXI_PROT_EN_MFG_SNOOP_OUT,
+		},
 	},
 };
 
@@ -522,7 +538,6 @@ static const struct scpsys_soc_data mt8173_scpsys_data = {
 	.num_domains = ARRAY_SIZE(scpsys_domain_data_mt8173),
 	.pwr_sta_offs = SPM_PWR_STATUS,
 	.pwr_sta2nd_offs = SPM_PWR_STATUS_2ND,
-	.bus_prot_reg_update = true,
 };
 
 static const struct of_device_id scpsys_of_match[] = {
@@ -563,13 +578,6 @@ static int scpsys_probe(struct platform_device *pdev)
 	scpsys->base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(scpsys->base))
 		return -ENODEV;
-
-	scpsys->infracfg = syscon_regmap_lookup_by_phandle(np, "mediatek,infracfg");
-	if (IS_ERR(scpsys->infracfg)) {
-		dev_err(&pdev->dev, "Cannot find infracfg controller: %ld\n",
-			PTR_ERR(scpsys->infracfg));
-		return -ENODEV;
-	}
 
 	ret = -ENODEV;
 	for_each_available_child_of_node(np, node) {

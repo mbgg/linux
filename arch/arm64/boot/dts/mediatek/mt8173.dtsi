@@ -453,10 +453,8 @@
 		scpsys: power-controller@10006000 {
 			compatible = "mediatek,mt8173-power-controller";
 			reg = <0 0x10006000 0 0x1000>;
-			mediatek,infracfg = <&infracfg>;
 			#power-domain-cells = <1>;
 
-			pd {
 				#address-cells = <1>;
 				#size-cells = <0>;
 
@@ -482,6 +480,7 @@
 					reg = <MT8173_POWER_DOMAIN_MM>;
 					clocks = <&topckgen CLK_TOP_MM_SEL>;
 					#power-domain-cells = <0>;
+					mediatek,infracfg = <&infracfg>;
 				};
 				venc_lt: power-domain@MT8173_POWER_DOMAIN_VENC_LT {
 					reg = <MT8173_POWER_DOMAIN_VENC_LT>;
@@ -513,9 +512,9 @@
 						mfg: power-domain@MT8173_POWER_DOMAIN_MFG {
 							reg = <MT8173_POWER_DOMAIN_MFG>;
 							#power-domain-cells = <0>;
+							mediatek,infracfg = <&infracfg>;
 						};
 					};
-				};
 			};
 		};
 
