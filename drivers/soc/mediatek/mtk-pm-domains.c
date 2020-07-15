@@ -75,6 +75,7 @@ struct scpsys_bus_prot_data {
  * @sram_pdn_ack_bits: The mask for sram power control acked bits.
  * @caps: The flag for active wake-up action.
  * @bp_infracfg: bus protection for infracfg subsystem
+ * @bp_smi: bus protection for smi subsystem
  */
 struct scpsys_domain_data {
 	u32 sta_mask;
@@ -83,6 +84,7 @@ struct scpsys_domain_data {
 	u32 sram_pdn_ack_bits;
 	u8 caps;
 	const struct scpsys_bus_prot_data bp_infracfg[SPM_MAX_BUS_PROT_DATA];
+	const struct scpsys_bus_prot_data bp_smi[SPM_MAX_BUS_PROT_DATA];
 };
 
 struct scpsys_domain {
@@ -92,6 +94,7 @@ struct scpsys_domain {
 	int num_clks;
 	struct clk_bulk_data *clks;
 	struct regmap *infracfg;
+	struct regmap *smi;
 };
 
 struct scpsys_soc_data {
@@ -198,7 +201,12 @@ static int scpsys_bus_protect_enable(struct scpsys_domain *pd)
 	int ret;
 
 	ret = _scpsys_bus_protect_enable(bpd, pd->infracfg);
-	return ret;
+	if (ret)
+			return ret;
+
+	bpd = pd->data->bp_smi;
+	return _scpsys_bus_protect_enable(bpd, pd->smi);
+
 }
 
 static int _scpsys_bus_protect_disable(const struct scpsys_bus_prot_data *bpd, struct regmap *regmap)
@@ -231,7 +239,11 @@ static int scpsys_bus_protect_disable(struct scpsys_domain *pd)
 	int ret;
 
 	ret = _scpsys_bus_protect_disable(bpd, pd->infracfg);
-	return ret;
+	if (ret)
+			return ret;
+
+	bpd = pd->data->bp_smi;
+	return _scpsys_bus_protect_disable(bpd, pd->smi);
 }
 
 static int scpsys_power_on(struct generic_pm_domain *genpd)
@@ -364,6 +376,11 @@ static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node
 	pd->infracfg = syscon_regmap_lookup_by_phandle(node, "mediatek,infracfg");
 	if (IS_ERR(pd->infracfg)) {
 		pd->infracfg = NULL;
+	}
+
+	pd->smi = syscon_regmap_lookup_by_phandle(node, "mediatek,smi");
+	if (IS_ERR(pd->smi)) {
+		pd->smi = NULL;
 	}
 
 	pd->num_clks = of_clk_get_parent_count(node);
