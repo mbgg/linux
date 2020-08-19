@@ -56,13 +56,11 @@
 
 /**
  * struct scpsys_domain_data - scp domain data for power on/off flow
- * @name: The domain name.
  * @sta_mask: The mask for power on/off status bit.
  * @ctl_offs: The offset for main power control register.
  * @sram_pdn_bits: The mask for sram power control bits.
  * @sram_pdn_ack_bits: The mask for sram power control acked bits.
  * @bus_prot_mask: The mask for single step bus protection.
- * @clk_id: The basic clocks required by this power domain.
  * @caps: The flag for active wake-up action.
  */
 struct scpsys_domain_data {
