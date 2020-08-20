@@ -4,6 +4,7 @@
  * Copyright (c) 2020 Collabora Ltd.
  */
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/iopoll.h>
@@ -83,6 +84,8 @@ struct scpsys_bus_prot_data {
 	bool bus_prot_reg_update;
 };
 
+#define MAX_SUBSYS_CLKS 10
+
 /**
  * struct scpsys_domain_data - scp domain data for power on/off flow
  * @sta_mask: The mask for power on/off status bit.
@@ -90,6 +93,7 @@ struct scpsys_bus_prot_data {
  * @sram_pdn_bits: The mask for sram power control bits.
  * @sram_pdn_ack_bits: The mask for sram power control acked bits.
  * @caps: The flag for active wake-up action.
+ * @subsys_clk_name: list of names of subsystem clocks
  * @bp_infracfg: bus protection for infracfg subsystem
  * @bp_smi: bus protection for smi subsystem
  */
@@ -99,6 +103,7 @@ struct scpsys_domain_data {
 	u32 sram_pdn_bits;
 	u32 sram_pdn_ack_bits;
 	u8 caps;
+	const char *subsys_clk_name[MAX_SUBSYS_CLKS];
 	const struct scpsys_bus_prot_data bp_infracfg[SPM_MAX_BUS_PROT_DATA];
 	const struct scpsys_bus_prot_data bp_smi[SPM_MAX_BUS_PROT_DATA];
 };
@@ -109,6 +114,8 @@ struct scpsys_domain {
 	struct scpsys *scpsys;
 	int num_clks;
 	struct clk_bulk_data *clks;
+	int num_subsys_clks;
+	struct clk_bulk_data *subsys_clks;
 	struct regmap *infracfg;
 	struct regmap *smi;
 };
@@ -311,16 +318,22 @@ static int scpsys_power_on(struct generic_pm_domain *genpd)
 	val |= PWR_RST_B_BIT;
 	writel(val, ctl_addr);
 
+	ret = clk_bulk_enable(pd->num_subsys_clks, pd->subsys_clks);
+	if (ret)
+		goto err_pwr_ack;
+
 	ret = scpsys_sram_enable(pd, ctl_addr);
 	if (ret < 0)
-		goto err_pwr_ack;
+		goto err_sram;
 
 	ret = scpsys_bus_protect_disable(pd);
 	if (ret < 0)
-		goto err_pwr_ack;
+		goto err_sram;
 
 	return 0;
 
+err_sram:
+	clk_bulk_disable(pd->num_subsys_clks, pd->subsys_clks);
 err_pwr_ack:
 	clk_bulk_disable(pd->num_clks, pd->clks);
 	dev_err(scpsys->dev, "Failed to power on domain %s\n", genpd->name);
@@ -343,6 +356,8 @@ static int scpsys_power_off(struct generic_pm_domain *genpd)
 	ret = scpsys_sram_disable(pd, ctl_addr);
 	if (ret < 0)
 		return ret;
+
+	clk_bulk_disable(pd->num_subsys_clks, pd->subsys_clks);
 
 	/* subsys power off */
 	val = readl(ctl_addr);
@@ -376,8 +391,10 @@ static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node
 {
 	const struct scpsys_domain_data *domain_data;
 	struct scpsys_domain *pd;
-	int i, ret;
+	int i, j, ret, num_clks;
 	u32 id;
+	int sub_clk_ind = 0;
+	int clk_ind = 0;
 
 	ret = of_property_read_u32(node, "reg", &id);
 	if (ret) {
@@ -414,28 +431,56 @@ static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node
 		pd->smi = NULL;
 	}
 
-	pd->num_clks = of_clk_get_parent_count(node);
-	if (pd->num_clks > 0) {
+	num_clks = of_clk_get_parent_count(node);
+	if (num_clks > 0) {
+		/* calculate number of subsys_clks */
+
+		for (i = 0; i < MAX_SUBSYS_CLKS; i++)
+			if (!pd->data->subsys_clk_name[i])
+				break;
+
+		pd->num_clks = num_clks - i;
+		pd->num_subsys_clks = i;
+
 		pd->clks = devm_kcalloc(scpsys->dev, pd->num_clks, sizeof(*pd->clks), GFP_KERNEL);
 		if (!pd->clks)
+			return -ENOMEM;
+		pd->subsys_clks = devm_kcalloc(scpsys->dev, pd->num_subsys_clks,
+						sizeof(*pd->subsys_clks), GFP_KERNEL);
+		if (!pd->subsys_clks)
 			return -ENOMEM;
 	} else {
 		pd->num_clks = 0;
 	}
 
 	for (i = 0; i < pd->num_clks; i++) {
-		pd->clks[i].clk = of_clk_get(node, i);
-		if (IS_ERR(pd->clks[i].clk)) {
-			ret = PTR_ERR(pd->clks[i].clk);
+		struct clk *clk = of_clk_get(node, i);
+		if (IS_ERR(clk)) {
+			ret = PTR_ERR(clk);
 			dev_err(scpsys->dev, "%pOFn: failed to get clk at index %d: %d\n", node, i,
 				ret);
 			return ret;
 		}
+
+		/* check if clk is part of the subsystem clocks */
+		for (j = 0; j < pd->num_subsys_clks; j++) {
+			const char *clk_name = __clk_get_name(clk);
+			if (!strcmp(clk_name, pd->data->subsys_clk_name[j])) {
+				pd->subsys_clks[sub_clk_ind++].clk = clk;
+				break;
+			}
+		}
+
+		pd->clks[clk_ind++].clk = clk;
 	}
+
+	ret = clk_bulk_prepare(pd->num_subsys_clks, pd->subsys_clks);
+	if (ret)
+		goto err_put_subsys_clocks;
 
 	ret = clk_bulk_prepare(pd->num_clks, pd->clks);
 	if (ret)
-		goto err_put_clocks;
+		goto err_unprepare_subsys_clocks;
 
 	/*
 	 * Initially turn on all domains to make the domains usable
@@ -460,8 +505,11 @@ static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node
 
 err_unprepare_clocks:
 	clk_bulk_unprepare(pd->num_clks, pd->clks);
-err_put_clocks:
 	clk_bulk_put(pd->num_clks, pd->clks);
+err_unprepare_subsys_clocks:
+	clk_bulk_unprepare(pd->num_subsys_clks, pd->subsys_clks);
+err_put_subsys_clocks:
+	clk_bulk_put(pd->num_subsys_clks, pd->subsys_clks);
 	return ret;
 }
 
@@ -534,6 +582,7 @@ static void scpsys_remove_one_domain(struct scpsys_domain *pd)
 			"failed to remove domain '%s' : %d - state may be inconsistent\n",
 			pd->genpd.name, ret);
 
+	clk_bulk_unprepare(pd->num_subsys_clks, pd->subsys_clks);
 	clk_bulk_unprepare(pd->num_clks, pd->clks);
 	clk_bulk_put(pd->num_clks, pd->clks);
 
