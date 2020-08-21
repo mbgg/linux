@@ -462,6 +462,7 @@
 				vdec@MT8173_POWER_DOMAIN_VDEC {
 					reg = <MT8173_POWER_DOMAIN_VDEC>;
 					clocks = <&topckgen CLK_TOP_MM_SEL>;
+					clock-names = "mm";
 					#power-domain-cells = <0>;
 				};
 
@@ -469,16 +470,19 @@
 					reg = <MT8173_POWER_DOMAIN_VENC>;
 					clocks = <&topckgen CLK_TOP_MM_SEL>,
 						 <&topckgen CLK_TOP_VENC_SEL>;
+					clock-names = "mm", "venc";
 					#power-domain-cells = <0>;
 				};
 				isp@MT8173_POWER_DOMAIN_ISP {
 					reg = <MT8173_POWER_DOMAIN_ISP>;
 					clocks = <&topckgen CLK_TOP_MM_SEL>;
+					clock-names = "mm";
 					#power-domain-cells = <0>;
 				};
 				mm@MT8173_POWER_DOMAIN_MM {
 					reg = <MT8173_POWER_DOMAIN_MM>;
 					clocks = <&topckgen CLK_TOP_MM_SEL>;
+					clock-names = "mm";
 					#power-domain-cells = <0>;
 					mediatek,infracfg = <&infracfg>;
 				};
@@ -486,6 +490,7 @@
 					reg = <MT8173_POWER_DOMAIN_VENC_LT>;
 					clocks = <&topckgen CLK_TOP_MM_SEL>,
 						 <&topckgen CLK_TOP_VENC_LT_SEL>;
+					clock-names = "mm", "venc-lt";
 					#power-domain-cells = <0>;
 				};
 				audio@MT8173_POWER_DOMAIN_AUDIO {
@@ -499,6 +504,7 @@
 				mfg_async@MT8173_POWER_DOMAIN_MFG_ASYNC {
 					reg = <MT8173_POWER_DOMAIN_MFG_ASYNC>;
 					clocks = <&clk26m>;
+					clock-names = "mfg";
 					#address-cells = <1>;
 					#size-cells = <0>;
 					#power-domain-cells = <1>;
