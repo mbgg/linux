@@ -84,7 +84,7 @@ struct scpsys_bus_prot_data {
 	bool bus_prot_reg_update;
 };
 
-#define MAX_SUBSYS_CLKS 10
+#define MAX_CLKS 3
 
 /**
  * struct scpsys_domain_data - scp domain data for power on/off flow
@@ -103,7 +103,7 @@ struct scpsys_domain_data {
 	u32 sram_pdn_bits;
 	u32 sram_pdn_ack_bits;
 	u8 caps;
-	const char *subsys_clk_name[MAX_SUBSYS_CLKS];
+	const char *basic_clk_name[MAX_CLKS];
 	const struct scpsys_bus_prot_data bp_infracfg[SPM_MAX_BUS_PROT_DATA];
 	const struct scpsys_bus_prot_data bp_smi[SPM_MAX_BUS_PROT_DATA];
 };
@@ -387,14 +387,64 @@ static int scpsys_power_off(struct generic_pm_domain *genpd)
 	return 0;
 }
 
+static int scpsys_group_clks(struct scpsys_domain *pd, struct device_node *node)
+{
+	int i, j, ret, num_clks;
+	int sub_clk_ind = 0;
+	int clk_ind = 0;
+	struct scpsys *scpsys = pd->scpsys;
+
+	num_clks = of_clk_get_parent_count(node);
+	if (num_clks > 0) {
+		/* calculate number of basic clocks */
+		for (i = 0; i < MAX_CLKS; i++)
+			if (!pd->data->basic_clk_name[i])
+				break;
+
+		pd->num_clks = i;
+		pd->num_subsys_clks = num_clks - i;
+
+		pd->clks = devm_kcalloc(scpsys->dev, pd->num_clks, sizeof(*pd->clks), GFP_KERNEL);
+		if (!pd->clks)
+			return -ENOMEM;
+		pd->subsys_clks = devm_kcalloc(scpsys->dev, pd->num_subsys_clks,
+						sizeof(*pd->subsys_clks), GFP_KERNEL);
+		if (!pd->subsys_clks)
+			return -ENOMEM;
+	} else {
+		pd->num_clks = 0;
+	}
+
+	for (i = 0; i < num_clks; i++) {
+		struct clk *clk = of_clk_get(node, i);
+		if (IS_ERR(clk)) {
+			ret = PTR_ERR(clk);
+			dev_err(scpsys->dev, "%pOFn: failed to get clk at index %d: %d\n", node, i,
+				ret);
+			return ret;
+		}
+
+		/* check if clk is part of the basic clocks */
+		for (j = 0; j < pd->num_clks; j++) {
+			const char *clk_name = __clk_get_name(clk);
+			if (!strcmp(clk_name, pd->data->basic_clk_name[j])) {
+				pd->subsys_clks[clk_ind++].clk = clk;
+				break;
+			}
+		}
+
+		pd->subsys_clks[sub_clk_ind++].clk = clk;
+	}
+
+	return 0;
+}
+
 static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node)
 {
 	const struct scpsys_domain_data *domain_data;
 	struct scpsys_domain *pd;
-	int i, j, ret, num_clks;
+	int ret;
 	u32 id;
-	int sub_clk_ind = 0;
-	int clk_ind = 0;
 
 	ret = of_property_read_u32(node, "reg", &id);
 	if (ret) {
@@ -431,48 +481,9 @@ static int scpsys_add_one_domain(struct scpsys *scpsys, struct device_node *node
 		pd->smi = NULL;
 	}
 
-	num_clks = of_clk_get_parent_count(node);
-	if (num_clks > 0) {
-		/* calculate number of subsys_clks */
-
-		for (i = 0; i < MAX_SUBSYS_CLKS; i++)
-			if (!pd->data->subsys_clk_name[i])
-				break;
-
-		pd->num_clks = num_clks - i;
-		pd->num_subsys_clks = i;
-
-		pd->clks = devm_kcalloc(scpsys->dev, pd->num_clks, sizeof(*pd->clks), GFP_KERNEL);
-		if (!pd->clks)
-			return -ENOMEM;
-		pd->subsys_clks = devm_kcalloc(scpsys->dev, pd->num_subsys_clks,
-						sizeof(*pd->subsys_clks), GFP_KERNEL);
-		if (!pd->subsys_clks)
-			return -ENOMEM;
-	} else {
-		pd->num_clks = 0;
-	}
-
-	for (i = 0; i < pd->num_clks; i++) {
-		struct clk *clk = of_clk_get(node, i);
-		if (IS_ERR(clk)) {
-			ret = PTR_ERR(clk);
-			dev_err(scpsys->dev, "%pOFn: failed to get clk at index %d: %d\n", node, i,
-				ret);
-			return ret;
-		}
-
-		/* check if clk is part of the subsystem clocks */
-		for (j = 0; j < pd->num_subsys_clks; j++) {
-			const char *clk_name = __clk_get_name(clk);
-			if (!strcmp(clk_name, pd->data->subsys_clk_name[j])) {
-				pd->subsys_clks[sub_clk_ind++].clk = clk;
-				break;
-			}
-		}
-
-		pd->clks[clk_ind++].clk = clk;
-	}
+	ret = scpsys_group_clks(pd, node);
+	if (ret)
+		return ret;
 
 	ret = clk_bulk_prepare(pd->num_subsys_clks, pd->subsys_clks);
 	if (ret)
@@ -614,24 +625,28 @@ static const struct scpsys_domain_data scpsys_domain_data_mt8173[] = {
 		.ctl_offs = SPM_VDE_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(12, 12),
+		.basic_clk_name = {"mm"},
 	},
 	[MT8173_POWER_DOMAIN_VENC] = {
 		.sta_mask = PWR_STATUS_VENC,
 		.ctl_offs = SPM_VEN_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
+		.basic_clk_name = {"mm", "venc"},
 	},
 	[MT8173_POWER_DOMAIN_ISP] = {
 		.sta_mask = PWR_STATUS_ISP,
 		.ctl_offs = SPM_ISP_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(13, 12),
+		.basic_clk_name = {"mm"},
 	},
 	[MT8173_POWER_DOMAIN_MM] = {
 		.sta_mask = PWR_STATUS_DISP,
 		.ctl_offs = SPM_DIS_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(12, 12),
+		.basic_clk_name = {"mm"},
 		.bp_infracfg = {
 			BUS_PROT_UPDATE_MT8173(MT8173_TOP_AXI_PROT_EN_MM_M0 |
 					       MT8173_TOP_AXI_PROT_EN_MM_M1),
@@ -642,6 +657,7 @@ static const struct scpsys_domain_data scpsys_domain_data_mt8173[] = {
 		.ctl_offs = SPM_VEN2_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
+		.basic_clk_name = {"mm", "venc-lt"},
 	},
 	[MT8173_POWER_DOMAIN_AUDIO] = {
 		.sta_mask = PWR_STATUS_AUDIO,
@@ -661,6 +677,7 @@ static const struct scpsys_domain_data scpsys_domain_data_mt8173[] = {
 		.ctl_offs = SPM_MFG_ASYNC_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = 0,
+		.basic_clk_name = {"mfg"},
 	},
 	[MT8173_POWER_DOMAIN_MFG_2D] = {
 		.sta_mask = PWR_STATUS_MFG_2D,
