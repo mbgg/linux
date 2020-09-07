@@ -438,7 +438,7 @@ static int scpsys_group_clks(struct scpsys_domain *pd, struct device_node *node)
 		for (j = 0; j < pd->num_clks; j++) {
 			const char *clk_name = __clk_get_name(clk);
 			if (!strcmp(clk_name, pd->data->basic_clk_name[j])) {
-				pd->subsys_clks[clk_ind++].clk = clk;
+				pd->clks[clk_ind++].clk = clk;
 				break;
 			}
 		}
