@@ -19,7 +19,7 @@ LDO:
 Example:
 
 	pmic: mt6323 {
-		mt6323regulator: regulators {
+		mt6323regulator {
 			mt6323_vproc_reg: buck_vproc{
 				regulator-name = "vproc";
 				regulator-min-microvolt = < 700000>;

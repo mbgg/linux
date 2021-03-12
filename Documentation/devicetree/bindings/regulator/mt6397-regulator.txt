@@ -1,11 +1,9 @@
 Mediatek MT6397 Regulator
 
-Required properties:
-- compatible: "mediatek,mt6397-regulator"
-- mt6397regulator: List of regulators provided by this controller. It is named
-  according to its regulator type, buck_<name> and ldo_<name>.
-  The definition for each of these nodes is defined using the standard binding
-  for regulators at Documentation/devicetree/bindings/regulator/regulator.txt.
+List of regulators provided by this controller. It is named
+according to its regulator type, buck_<name> and ldo_<name>.
+The definition for each of these nodes is defined using the standard binding
+for regulators at Documentation/devicetree/bindings/regulator/regulator.txt.
 
 The valid names for regulators are::
 BUCK:
@@ -23,9 +21,7 @@ Example:
 	pmic {
 		compatible = "mediatek,mt6397";
 
-		mt6397regulator: mt6397regulator {
-			compatible = "mediatek,mt6397-regulator";
-
+		mt6397regulator {
 			mt6397_vpca15_reg: buck_vpca15 {
 				regulator-compatible = "buck_vpca15";
 				regulator-name = "vpca15";
