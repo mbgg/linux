@@ -67,7 +67,6 @@ static const struct mfd_cell mt6323_devs[] = {
 		.of_compatible = "mediatek,mt6323-rtc",
 	}, {
 		.name = "mt6323-regulator",
-		.of_compatible = "mediatek,mt6323-regulator"
 	}, {
 		.name = "mt6323-led",
 		.of_compatible = "mediatek,mt6323-led"
@@ -87,7 +86,6 @@ static const struct mfd_cell mt6323_devs[] = {
 static const struct mfd_cell mt6358_devs[] = {
 	{
 		.name = "mt6358-regulator",
-		.of_compatible = "mediatek,mt6358-regulator"
 	}, {
 		.name = "mt6358-rtc",
 		.num_resources = ARRAY_SIZE(mt6358_rtc_resources),
@@ -107,7 +105,6 @@ static const struct mfd_cell mt6397_devs[] = {
 		.of_compatible = "mediatek,mt6397-rtc",
 	}, {
 		.name = "mt6397-regulator",
-		.of_compatible = "mediatek,mt6397-regulator",
 	}, {
 		.name = "mt6397-codec",
 		.of_compatible = "mediatek,mt6397-codec",
