@@ -42,6 +42,7 @@ struct mt6323_regulator_info {
 	.desc = {							\
 		.name = #vreg,						\
 		.of_match = of_match_ptr(match),			\
+		.regulators_node = of_match_ptr("mt6323regulator"),	\
 		.ops = &mt6323_volt_range_ops,				\
 		.type = REGULATOR_VOLTAGE,				\
 		.id = MT6323_ID_##vreg,					\
@@ -66,6 +67,7 @@ struct mt6323_regulator_info {
 	.desc = {							\
 		.name = #vreg,						\
 		.of_match = of_match_ptr(match),			\
+		.regulators_node = of_match_ptr("mt6323regulator"),	\
 		.ops = &mt6323_volt_table_ops,				\
 		.type = REGULATOR_VOLTAGE,				\
 		.id = MT6323_ID_##vreg,					\
@@ -88,6 +90,7 @@ struct mt6323_regulator_info {
 	.desc = {							\
 		.name = #vreg,						\
 		.of_match = of_match_ptr(match),			\
+		.regulators_node = of_match_ptr("mt6323regulator"),	\
 		.ops = &mt6323_volt_fixed_ops,				\
 		.type = REGULATOR_VOLTAGE,				\
 		.id = MT6323_ID_##vreg,					\

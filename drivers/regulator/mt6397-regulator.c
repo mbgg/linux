@@ -42,6 +42,7 @@ struct mt6397_regulator_info {
 	.desc = {							\
 		.name = #vreg,						\
 		.of_match = of_match_ptr(match),			\
+		.regulators_node = of_match_ptr("mt6397regulator"),	\
 		.ops = &mt6397_volt_range_ops,				\
 		.type = REGULATOR_VOLTAGE,				\
 		.id = MT6397_ID_##vreg,					\
@@ -70,6 +71,7 @@ struct mt6397_regulator_info {
 	.desc = {							\
 		.name = #vreg,						\
 		.of_match = of_match_ptr(match),			\
+		.regulators_node = of_match_ptr("mt6397regulator"),	\
 		.ops = &mt6397_volt_table_ops,				\
 		.type = REGULATOR_VOLTAGE,				\
 		.id = MT6397_ID_##vreg,					\
@@ -89,6 +91,7 @@ struct mt6397_regulator_info {
 	.desc = {							\
 		.name = #vreg,						\
 		.of_match = of_match_ptr(match),			\
+		.regulators_node = of_match_ptr("mt6397regulator"),	\
 		.ops = &mt6397_volt_fixed_ops,				\
 		.type = REGULATOR_VOLTAGE,				\
 		.id = MT6397_ID_##vreg,					\
@@ -396,16 +399,9 @@ static const struct platform_device_id mt6397_platform_ids[] = {
 };
 MODULE_DEVICE_TABLE(platform, mt6397_platform_ids);
 
-static const struct of_device_id mt6397_of_match[] = {
-	{ .compatible = "mediatek,mt6397-regulator", },
-	{ /* sentinel */ },
-};
-MODULE_DEVICE_TABLE(of, mt6397_of_match);
-
 static struct platform_driver mt6397_regulator_driver = {
 	.driver = {
 		.name = "mt6397-regulator",
-		.of_match_table = of_match_ptr(mt6397_of_match),
 	},
 	.probe = mt6397_regulator_probe,
 	.id_table = mt6397_platform_ids,
