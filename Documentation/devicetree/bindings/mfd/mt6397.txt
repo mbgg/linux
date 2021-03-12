@@ -33,11 +33,8 @@ Optional subnodes:
 	For details, see ../rtc/rtc-mt6397.txt
 - regulators
 	Required properties:
-		- compatible: "mediatek,mt6323-regulator"
 	see ../regulator/mt6323-regulator.txt
-		- compatible: "mediatek,mt6358-regulator"
 	see ../regulator/mt6358-regulator.txt
-		- compatible: "mediatek,mt6397-regulator"
 	see ../regulator/mt6397-regulator.txt
 - codec
 	Required properties:
