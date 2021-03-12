@@ -15,9 +15,7 @@
 			compatible = "mediatek,mt6358-sound";
 		};
 
-		mt6358regulator: mt6358regulator {
-			compatible = "mediatek,mt6358-regulator";
-
+		mt6358regulator {
 			mt6358_vdram1_reg: buck_vdram1 {
 				regulator-name = "vdram1";
 				regulator-min-microvolt = <500000>;
