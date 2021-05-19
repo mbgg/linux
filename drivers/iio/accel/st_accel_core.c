@@ -980,8 +980,6 @@ static const struct st_sensor_settings st_accel_sensors_settings[] = {
 		.multi_read_bit = true,
 		.bootime = 2,
 	},
-
-	// LSM9DS1
 	{
 		.wai = 0x68,
 		.wai_addr = ST_SENSORS_DEFAULT_WAI_ADDRESS,
@@ -993,12 +991,12 @@ static const struct st_sensor_settings st_accel_sensors_settings[] = {
 			.addr = 0x20,
 			.mask = 0xe0,
 			.odr_avl = {
-				{	.hz	=	10,		.value = 0x01, },
-				{ .hz = 50, 	.value = 0x02, },
-				{ .hz = 119,	.value = 0x03, },
-				{ .hz = 238,	.value = 0x04, },
-				{ .hz = 476,	.value = 0x05, },
-				{ .hz = 952,	.value = 0x06, },
+				{ .hz = 10, .value = 0x01, },
+				{ .hz = 50, .value = 0x02, },
+				{ .hz = 119, .value = 0x03, },
+				{ .hz = 238, .value = 0x04, },
+				{ .hz = 476, .value = 0x05, },
+				{ .hz = 952, .value = 0x06, },
 			},
 		},
 		.pw = {
@@ -1042,8 +1040,8 @@ static const struct st_sensor_settings st_accel_sensors_settings[] = {
 				.mask = 0x01,
 			},
 			.int2{
-				.addr	=	0x0d,
-				.mask	=	0x01,
+				.addr =	0x0d,
+				.mask =	0x01,
 			},
 			.addr_ihl = 0x22,
 			.mask_ihl = 0x20,
