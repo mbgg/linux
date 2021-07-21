@@ -2105,6 +2105,13 @@ config MFD_ACER_A500_EC
 	  The controller itself is ENE KB930, it is running firmware
 	  customized for the specific needs of the Acer A500 hardware.
 
+config MFD_RPI_SENSE
+	tristate "Raspberry PI sense hat uC"
+	depends on I2C
+	select MFD_CORE
+	help
+	  Support for RPi sense FB and Joystick
+
 menu "Multimedia Capabilities Port drivers"
 	depends on ARCH_SA1100
 
