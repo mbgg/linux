@@ -1,5 +1,4 @@
 /*
- * 
  *
  * Copyright (c) 2021 SUSE
  *
@@ -70,12 +69,11 @@ printk(KERN_ERR"%s\n", __func__);
 	rpisense->write_block = rpi_sense_block_write;
 
 	ret = rpi_sense_reg_read(rpisense, RPI_SENSE_WAI);
-	if (ret > 0) {
-		if (ret != 's')
-			return -ENODEV;
-	} else {
+	if (ret < 0)
 		return ret;
-	}
+	else if (ret != 's')
+		return -ENODEV;
+
 	ret = rpi_sense_reg_read(rpisense, RPI_SENSE_VER);
 	if (ret < 0)
 		return ret;
