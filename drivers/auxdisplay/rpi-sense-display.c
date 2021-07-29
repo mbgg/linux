@@ -82,7 +82,7 @@ static ssize_t rpisense_fb_write(struct fb_info *info,
 {
 	ssize_t res = fb_sys_write(info, buf, count, ppos);
 
-	schedule_delayed_work(&info->deferred_work, rpisense_fb_defio.delay);
+	schedule_delayed_work(&info->deferred_work, info->fbdefio->delay);
 	return res;
 }
 
@@ -90,21 +90,21 @@ static void rpisense_fb_fillrect(struct fb_info *info,
 				 const struct fb_fillrect *rect)
 {
 	sys_fillrect(info, rect);
-	schedule_delayed_work(&info->deferred_work, rpisense_fb_defio.delay);
+	schedule_delayed_work(&info->deferred_work, info->fbdefio->delay);
 }
 
 static void rpisense_fb_copyarea(struct fb_info *info,
 				 const struct fb_copyarea *area)
 {
 	sys_copyarea(info, area);
-	schedule_delayed_work(&info->deferred_work, rpisense_fb_defio.delay);
+	schedule_delayed_work(&info->deferred_work, info->fbdefio->delay);
 }
 
 static void rpisense_fb_imageblit(struct fb_info *info,
 				  const struct fb_image *image)
 {
 	sys_imageblit(info, image);
-	schedule_delayed_work(&info->deferred_work, rpisense_fb_defio.delay);
+	schedule_delayed_work(&info->deferred_work, info->fbdefio->delay);
 }
 
 static void rpisense_fb_deferred_io(struct fb_info *info,
@@ -153,7 +153,7 @@ static int rpisense_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			return -EFAULT;
 		par->gamma = gamma_user;
 		schedule_delayed_work(&info->deferred_work,
-				      rpisense_fb_defio.delay);
+				      info->fbdefio->delay);
 		return 0;
 	case SENSEFB_FBIORESET_GAMMA:
 		switch (arg) {
@@ -170,7 +170,7 @@ static int rpisense_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			return -EINVAL;
 		}
 		schedule_delayed_work(&info->deferred_work,
-				      rpisense_fb_defio.delay);
+				      info->fbdefio->delay);
 		break;
 	default:
 		return -EINVAL;
@@ -236,7 +236,7 @@ static int rpisense_fb_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, info);
 
 	fb_info(info, "%s frame buffer device\n", info->fix.id);
-	schedule_delayed_work(&info->deferred_work, rpisense_fb_defio.delay);
+	schedule_delayed_work(&info->deferred_work, info->fbdefio->delay);
 	return 0;
 err_fballoc:
 	framebuffer_release(info);
