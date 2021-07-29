@@ -33,13 +33,8 @@ MODULE_PARM_DESC(lowlight, "Reduce LED matrix brightness to one third");
 struct rpisense_fb {
 	struct fb_info *info;
 	struct rpi_sense_dev *rpi_sense_dev;
-};
-
-struct rpisense_fb_param {
-	char __iomem *vmem;
-	u8 *vmem_work;
-	u32 vmemsize;
 	u8 *gamma;
+	u8 *vmem_work;
 };
 
 static u8 gamma_default[32] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
@@ -57,12 +52,6 @@ static u8 gamma_user[32];
 static u32 pseudo_palette[16];
 
 static struct fb_deferred_io rpisense_fb_defio;
-
-static struct rpisense_fb_param rpisense_fb_param = {
-	.vmem = NULL,
-	.vmemsize = 128,
-	.gamma = gamma_default,
-};
 
 static struct fb_fix_screeninfo rpisense_fb_fix = {
 	.id =		"RPi-Sense FB",
@@ -123,16 +112,10 @@ static void rpisense_fb_deferred_io(struct fb_info *info,
 {
 	int i;
 	int j;
-	u8 *vmem_work = rpisense_fb_param.vmem_work;
 	u16 *mem = (u16 *)info->screen_base;
-	u8 *gamma = rpisense_fb_param.gamma;
 	struct rpisense_fb *par = info->par;
-
-//printk(KERN_ERR"vmem_work %px", vmem_work);
-//printk(KERN_ERR"mem %px", mem);
-//printk(KERN_ERR"gamma %px", gamma);
-//printk(KERN_ERR"par %px", par);
-
+	u8 *gamma = par->gamma;
+	u8 *vmem_work = par->vmem_work;
 
 	vmem_work[0] = 0;
 	for (j = 0; j < 8; j++) {
@@ -145,8 +128,6 @@ static void rpisense_fb_deferred_io(struct fb_info *info,
 				gamma[(mem[(j * 8) + i]) & 0x1F];
 		}
 	}
-//printk(KERN_ERR"rpi_sense_dev %px", par->rpi_sense_dev);
-//printk(KERN_ERR"write_block %px", par->rpi_sense_dev->write_block);
 	par->rpi_sense_dev->write_block(par->rpi_sense_dev, vmem_work, 193);
 }
 
@@ -158,9 +139,11 @@ static struct fb_deferred_io rpisense_fb_defio = {
 static int rpisense_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			     unsigned long arg)
 {
+	struct rpisense_fb *par = info->par;
+
 	switch (cmd) {
 	case SENSEFB_FBIOGET_GAMMA:
-		if (copy_to_user((void __user *) arg, rpisense_fb_param.gamma,
+		if (copy_to_user((void __user *) arg, par->gamma,
 				 sizeof(u8[32])))
 			return -EFAULT;
 		return 0;
@@ -168,20 +151,20 @@ static int rpisense_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		if (copy_from_user(gamma_user, (void __user *)arg,
 				   sizeof(u8[32])))
 			return -EFAULT;
-		rpisense_fb_param.gamma = gamma_user;
+		par->gamma = gamma_user;
 		schedule_delayed_work(&info->deferred_work,
 				      rpisense_fb_defio.delay);
 		return 0;
 	case SENSEFB_FBIORESET_GAMMA:
 		switch (arg) {
 		case 0:
-			rpisense_fb_param.gamma = gamma_default;
+			par->gamma = gamma_default;
 			break;
 		case 1:
-			rpisense_fb_param.gamma = gamma_low;
+			par->gamma = gamma_low;
 			break;
 		case 2:
-			rpisense_fb_param.gamma = gamma_user;
+			par->gamma = gamma_user;
 			break;
 		default:
 			return -EINVAL;
@@ -215,15 +198,23 @@ static int rpisense_fb_probe(struct platform_device *pdev)
 	if (!vmem)
 		return ret;
 
-	rpisense_fb_param.vmem_work = devm_kmalloc(&pdev->dev, 193, GFP_KERNEL);
-	if (!rpisense_fb_param.vmem_work)
-		goto err_malloc;
+	rpisense_fb_fix.smem_start = (unsigned long)vmem;
 
 	info = framebuffer_alloc(sizeof(struct rpisense_fb), &pdev->dev);
 	if (!info)
 		goto err_malloc;
 
-	rpisense_fb_fix.smem_start = (unsigned long)vmem;
+	rpisense_fb = info->par;
+	rpisense_fb->rpi_sense_dev = dev_get_drvdata(pdev->dev.parent);
+
+	if (lowlight)
+		rpisense_fb->gamma = gamma_low;
+	else
+		rpisense_fb->gamma = gamma_default;
+
+	rpisense_fb->vmem_work = devm_kmalloc(&pdev->dev, 193, GFP_KERNEL);
+	if (!rpisense_fb->vmem_work)
+		goto err_malloc;
 
 	info->fbops = &rpisense_fb_ops;
 	info->fix = rpisense_fb_fix;
@@ -233,12 +224,6 @@ static int rpisense_fb_probe(struct platform_device *pdev)
 	info->screen_base = vmem;
 	info->screen_size = rpisense_fb_fix.smem_len;
 	info->pseudo_palette = pseudo_palette;
-
-	rpisense_fb = info->par;
-	rpisense_fb->rpi_sense_dev = dev_get_drvdata(pdev->dev.parent);
-
-	if (lowlight)
-		rpisense_fb_param.gamma = gamma_low;
 
 	fb_deferred_io_init(info);
 
@@ -256,7 +241,7 @@ static int rpisense_fb_probe(struct platform_device *pdev)
 err_fballoc:
 	framebuffer_release(info);
 err_malloc:
-	vfree(rpisense_fb_param.vmem);
+	vfree(vmem);
 	return ret;
 }
 
@@ -268,7 +253,7 @@ static int rpisense_fb_remove(struct platform_device *pdev)
 		unregister_framebuffer(info);
 		fb_deferred_io_cleanup(info);
 		framebuffer_release(info);
-		vfree(rpisense_fb_param.vmem);
+		vfree(info->screen_base);
 	}
 
 	return 0;
