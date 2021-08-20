@@ -31,7 +31,7 @@ static int rpi_sense_reg_read(struct rpi_sense_dev *rpisense, int reg)
 	int ret = i2c_smbus_read_byte_data(rpisense->i2c_client, reg);
 
 	if (ret < 0) {
-		dev_err(rpisense->dev, "Read from reg %d failed\n", reg);
+		dev_err(rpisense->dev, "Read from reg %#x failed\n", reg);
 		return reg;
 	}
 
