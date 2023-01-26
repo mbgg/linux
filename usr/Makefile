@@ -82,4 +82,8 @@ $(obj)/initramfs_inc_data: $(cpio-data) FORCE
 
 targets += initramfs_data.cpio initramfs_inc_data
 
+ekdump_data := $(CONFIG_EARLY_KDUMP)
+$(obj)/ekdump_data.o: $(obj)/ekdump_data_inc
+targets += ekdump_data_inc
+
 subdir-$(CONFIG_UAPI_HEADER_TEST) += include

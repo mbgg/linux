@@ -322,6 +322,198 @@ out_free_image:
 	return ret;
 }
 
+#ifdef EARLY_KDUMP
+static int
+kimage_early_prepare_segments(struct kimage *image, int kernel_fd, int initrd_fd,
+			     const char __user *cmdline_ptr,
+			     unsigned long cmdline_len, unsigned flags)
+{
+	int ret;
+	void *ldata;
+
+	ret = kernel_read_file_from_fd(kernel_fd, 0, &image->kernel_buf,
+				       INT_MAX, NULL, READING_KEXEC_IMAGE);
+	if (ret < 0)
+		return ret;
+	image->kernel_buf_len = ret;
+
+	/* Call arch image probe handlers */
+	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
+					    image->kernel_buf_len);
+	if (ret)
+		goto out;
+
+#ifdef CONFIG_KEXEC_SIG
+	ret = kimage_validate_signature(image);
+
+	if (ret)
+		goto out;
+#endif
+	/* It is possible that there no initramfs is being loaded */
+	if (!(flags & KEXEC_FILE_NO_INITRAMFS)) {
+		ret = kernel_read_file_from_fd(initrd_fd, 0, &image->initrd_buf,
+					       INT_MAX, NULL,
+					       READING_KEXEC_INITRAMFS);
+		if (ret < 0)
+			goto out;
+		image->initrd_buf_len = ret;
+		ret = 0;
+	}
+
+	if (cmdline_len) {
+		image->cmdline_buf = memdup_user(cmdline_ptr, cmdline_len);
+		if (IS_ERR(image->cmdline_buf)) {
+			ret = PTR_ERR(image->cmdline_buf);
+			image->cmdline_buf = NULL;
+			goto out;
+		}
+
+		image->cmdline_buf_len = cmdline_len;
+
+		/* command line should be a string with last byte null */
+		if (image->cmdline_buf[cmdline_len - 1] != '\0') {
+			ret = -EINVAL;
+			goto out;
+		}
+
+		ima_kexec_cmdline(kernel_fd, image->cmdline_buf,
+				  image->cmdline_buf_len - 1);
+	}
+
+	/* IMA needs to pass the measurement list to the next kernel. */
+	ima_add_kexec_buffer(image);
+
+	/* Call arch image load handlers */
+	ldata = arch_kexec_kernel_image_load(image);
+
+	if (IS_ERR(ldata)) {
+		ret = PTR_ERR(ldata);
+		goto out;
+	}
+
+	image->image_loader_data = ldata;
+out:
+	/* In case of error, free up all allocated memory in this function */
+	if (ret)
+		kimage_file_post_load_cleanup(image);
+	return ret;
+}
+
+static int
+kimage_early_alloc_init(struct kimage **rimage, int kernel_fd,
+		       int initrd_fd, const char __user *cmdline_ptr,
+		       unsigned long cmdline_len)
+{
+	int ret;
+	struct kimage *image;
+
+	image = do_kimage_alloc_init();
+	if (!image)
+		return -ENOMEM;
+
+	image->file_mode = 1;
+
+	/* Enable special crash kernel control page alloc policy. */
+	image->control_page = crashk_res.start;
+	image->type = KEXEC_TYPE_CRASH;
+
+	ret = kimage_early_prepare_segments(image, kernel_fd, initrd_fd,
+					   cmdline_ptr, cmdline_len, flags);
+	if (ret)
+		goto out_free_image;
+
+	ret = sanity_check_segment_list(image);
+	if (ret)
+		goto out_free_post_load_bufs;
+
+	ret = -ENOMEM;
+	image->control_code_page = kimage_alloc_control_pages(image,
+					   get_order(KEXEC_CONTROL_PAGE_SIZE));
+	if (!image->control_code_page) {
+		pr_err("Could not allocate control_code_buffer\n");
+		goto out_free_post_load_bufs;
+	}
+
+	*rimage = image;
+	return 0;
+out_free_control_pages:
+	kimage_free_page_list(&image->control_pages);
+out_free_post_load_bufs:
+	kimage_file_post_load_cleanup(image);
+out_free_image:
+	kfree(image);
+	return ret;
+}
+
+int kexec_early_dump(void)
+{
+	int ret = 0, i;
+	struct kimage **dest_image, *image;
+
+	image = NULL;
+
+	if (!mutex_trylock(&kexec_mutex))
+		return -EBUSY;
+
+	dest_image = &kexec_crash_image;
+
+	ret = kimage_early_alloc_init(&image, kernel_fd, initrd_fd, cmdline_ptr,
+				     cmdline_len);
+	if (ret)
+		goto out;
+
+	ret = machine_kexec_prepare(image);
+	if (ret)
+		goto out;
+
+	/*
+	 * Some architecture(like S390) may touch the crash memory before
+	 * machine_kexec_prepare(), we must copy vmcoreinfo data after it.
+	 */
+	ret = kimage_crash_copy_vmcoreinfo(image);
+	if (ret)
+		goto out;
+
+	ret = kexec_calculate_store_digests(image);
+	if (ret)
+		goto out;
+
+	for (i = 0; i < image->nr_segments; i++) {
+		struct kexec_segment *ksegment;
+
+		ksegment = &image->segment[i];
+		pr_debug("Loading segment %d: buf=0x%p bufsz=0x%zx mem=0x%lx memsz=0x%zx\n",
+			 i, ksegment->buf, ksegment->bufsz, ksegment->mem,
+			 ksegment->memsz);
+
+		ret = kimage_load_segment(image, &image->segment[i]);
+		if (ret)
+			goto out;
+	}
+
+	kimage_terminate(image);
+
+	ret = machine_kexec_post_load(image);
+	if (ret)
+		goto out;
+
+	/*
+	 * Free up any temporary buffers allocated which are not needed
+	 * after image has been loaded
+	 */
+	kimage_file_post_load_cleanup(image);
+exchange:
+	image = xchg(dest_image, image);
+out:
+	if ((flags & KEXEC_FILE_ON_CRASH) && kexec_crash_image)
+		arch_kexec_protect_crashkres();
+
+	mutex_unlock(&kexec_mutex);
+	kimage_free(image);
+	return ret;
+}
+#endif
+
 SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 		unsigned long, cmdline_len, const char __user *, cmdline_ptr,
 		unsigned long, flags)
