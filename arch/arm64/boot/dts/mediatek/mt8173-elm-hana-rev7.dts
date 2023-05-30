@@ -11,13 +11,9 @@
 	compatible = "google,hana-rev7", "mediatek,mt8173";
 };
 
-&cpu_thermal {
-	trips {
-		cpu_crit: cpu_crit0 {
-			temperature = <100000>;
-			type = "critical";
-		};
-	};
+&cpu_crit {
+	temperature = <100000>;
+	type = "critical";
 };
 
 &gpio_keys {
