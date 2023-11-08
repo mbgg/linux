@@ -945,6 +945,17 @@
 #define INIT_RAM_FS
 #endif
 
+#ifdef CONFIG_EARLY_KDUMP
+#define EARLY_KDUMP_DAT							\
+	. = ALIGN(4);							\
+	__ekdump_start = .;						\
+	KEEP(*(.init.ekdump))						\
+	. = ALIGN(8);							\
+	KEEP(*(.init.ekdump.info))
+#else
+#define EARLY_KDUMP_DAT
+#endif
+
 /*
  * Memory encryption operates on a page basis. Since we need to clear
  * the memory encryption mask for this section, it needs to be aligned
@@ -1142,6 +1153,7 @@
 		INIT_CALLS						\
 		CON_INITCALL						\
 		INIT_RAM_FS						\
+		EARLY_KDUMP_DAT						\
 	}
 
 #define BSS_SECTION(sbss_align, bss_align, stop_align)			\

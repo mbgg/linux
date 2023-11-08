@@ -3,6 +3,10 @@
 # Configuration for initramfs
 #
 
+#source "arch/Kconfig"
+
+if BLK_DEV_INITRD
+
 config INITRAMFS_SOURCE
 	string "Initramfs source file(s)"
 	default ""
@@ -227,3 +231,18 @@ config INITRAMFS_COMPRESSION_NONE
 	  filesystem image will be present in memory simultaneously
 
 endchoice
+
+endif
+
+if EARLY_KDUMP
+
+config EARLY_KDUMP_SOURCE
+	string "Early Kdump"
+#	depends on KEXEC_CORE
+	default ""
+	help
+	  Allow to create a Kdump early at boot time, before we get to user-space.
+	  This allows to compile into the host kernel a crash kernel and crash initrd
+	  that will be loaded in case of an early crash.
+
+endif
