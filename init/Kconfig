@@ -1297,11 +1297,16 @@ config BLK_DEV_INITRD
 
 	  If unsure say Y.
 
-if BLK_DEV_INITRD
+config EARLY_KDUMP
+	bool "Allow kdump to work with build-in crash kernel early in the boot process"
+	help
+	  Allow to create a Kdump early at boot time, before we get to user-space.
+	  This allows to compile into the host kernel a crash kernel and crash initrd
+	  that will be loaded in case of an early crash.
+
+	  if unsure say N.
 
 source "usr/Kconfig"
-
-endif
 
 config BOOT_CONFIG
 	bool "Boot config support"

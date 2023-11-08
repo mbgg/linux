@@ -258,6 +258,7 @@ SECTIONS
 		INIT_CALLS
 		CON_INITCALL
 		INIT_RAM_FS
+		EARLY_KDUMP_DAT
 		*(.init.altinstructions .init.bss)	/* from the EFI stub */
 	}
 	.exit.data : {
