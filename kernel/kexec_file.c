@@ -419,7 +419,11 @@ out:
 	return ret;
 }
 
-//#ifdef EARLY_KDUMP
+#ifdef EARLY_KDUMP
+
+extern char __ekdump_start[];
+extern unsigned long __ekdump_size;
+
 static int
 kimage_early_prepare_segments(struct kimage *image)
 	/*, int kernel_fd, int initrd_fd,
@@ -429,15 +433,8 @@ kimage_early_prepare_segments(struct kimage *image)
 	int ret;
 	void *ldata;
 
-//	ret = kernel_read_file_from_fd(kernel_fd, 0, &image->kernel_buf,
-//				       INT_MAX, NULL, READING_KEXEC_IMAGE);
-//	if (ret < 0)
-//		return ret;
-//	image->kernel_buf_len = ret;
-
-	/* TODO copy from internal memory needed? */
-	// see initramfs_data.S probably using memdup or something
-	// we should be able to use __ekdump_size and __ekdump_start
+	image->kernel_buf_len = __ekdump_size;
+	&image->kernel_buf = kmemdup(__ekdump_start, image->kernel_buf_len, GFP_KERNEL);
 
 	/* Call arch image probe handlers */
 	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
@@ -538,7 +535,7 @@ kimage_early_alloc_init(struct kimage **rimage)
 out_free_control_pages:
 	kimage_free_page_list(&image->control_pages);
 out_free_post_load_bufs:
-	kimage_file_post_load_cleanup(image);
+	// TODO	kimage_file_post_load_cleanup(image);
 out_free_image:
 	kfree(image);
 	return ret;
@@ -556,10 +553,6 @@ int kexec_early_dump(void)
 	if (ret)
 		goto out;
 
-	/*
-	 * Some architecture(like S390) may touch the crash memory before
-	 * machine_kexec_prepare(), we must copy vmcoreinfo data after it.
-	 */
 	ret = kimage_crash_copy_vmcoreinfo(image);
 	if (ret)
 		goto out;
@@ -591,7 +584,7 @@ int kexec_early_dump(void)
 	 * Free up any temporary buffers allocated which are not needed
 	 * after image has been loaded
 	 */
-	kimage_file_post_load_cleanup(image);
+	// TODO kimage_file_post_load_cleanup(image);
 exchange:
 	image = xchg(dest_image, image);
 out:
@@ -600,7 +593,7 @@ out:
 	kimage_free(image);
 	return ret;
 }
-//#endif
+#endif
 
 static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
 				    struct kexec_buf *kbuf)
