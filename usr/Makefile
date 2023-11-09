@@ -12,7 +12,7 @@ compress-$(CONFIG_INITRAMFS_COMPRESSION_LZO)	:= lzo
 compress-$(CONFIG_INITRAMFS_COMPRESSION_LZ4)	:= lz4
 compress-$(CONFIG_INITRAMFS_COMPRESSION_ZSTD)	:= zstd
 
-obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data.o
+obj-$(CONFIG_BLK_DEV_INITRD) += initramfs_data.o
 
 $(obj)/initramfs_data.o: $(obj)/initramfs_inc_data
 
@@ -84,7 +84,7 @@ targets += initramfs_data.cpio initramfs_inc_data
 
 # EARLY_KDUMP
 
-obj-$(CONFIG_EARLY_KDUMP) := ekdump_data.o
+obj-$(CONFIG_EARLY_KDUMP) += ekdump_data.o
 
 $(obj)/ekdump_data.o: $(obj)/ekdump_inc_data
 
