@@ -427,6 +427,7 @@ ftrace_vprintk(const char *fmt, va_list ap)
 	return 0;
 }
 static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+extern int kexec_early_dump(void);
 #endif /* CONFIG_TRACING */
 
 /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
