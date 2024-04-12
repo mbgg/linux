@@ -51,6 +51,25 @@ config DRM_GM12U320
 	 This is a KMS driver for projectors which use the GM12U320 chipset
 	 for video transfer over USB2/3, such as the Acer C120 mini projector.
 
+config DRM_S3
+	tristate "DRM driver for S3 Trio"
+	depends on DRM && PCI && KMS
+	select DRM_KMS_HELPER
+	select DRM_VRAM_HELPER
+	select VGASTATE
+	help
+	  DRM driver for S3 Trio graphics cards.
+
+	  If M is selected the module will be called s3drm.
+
+config DRM_S3_DDC
+	bool "DDC for S3 support"
+	depends on DRM_S3
+	select FB_DDC
+	default y
+	help
+	  Say Y here if you want DDC support for your S3 graphics card.
+
 config DRM_OFDRM
 	tristate "Open Firmware display driver"
 	depends on DRM && MMU && OF && (PPC || COMPILE_TEST)
