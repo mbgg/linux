@@ -187,8 +187,8 @@ config TINYDRM_REPAPER
 	  If M is selected the module will be called repaper.
 
 config TINYDRM_S3
-	tristate "DRM driver for S3 Trio"
-	depends on DRM && PCI && KMS
+	tristate "DRM support for S3 Trio"
+	depends on DRM && PCI
 	select DRM_KMS_HELPER
 	select DRM_VRAM_HELPER
 	select VGASTATE
@@ -198,9 +198,8 @@ config TINYDRM_S3
 	  If M is selected the module will be called s3drm.
 
 config TINYDRM_S3_DDC
-	bool "(DRM) DDC for S3 support"
-	depends on DRM_S3
-	select FB_DDC
+	bool "DDC for S3 support"
+	depends on TINYDRM_S3
 	default y
 	help
 	  Say Y here if you want DDC support for your S3 graphics card using
