@@ -329,7 +329,6 @@ out_free_image:
 	return ret;
 }
 
-int kexec_early_dump(void);
 SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 		unsigned long, cmdline_len, const char __user *, cmdline_ptr,
 		unsigned long, flags)
@@ -338,10 +337,6 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 			 KEXEC_TYPE_CRASH : KEXEC_TYPE_DEFAULT;
 	struct kimage **dest_image, *image;
 	int ret = 0, i;
-
-/* TODO really bad hack! */
-ret = kexec_early_dump();
-return ret;
 
 	/* We only trust the superuser with rebooting the system. */
 	if (!kexec_load_permitted(image_type))
@@ -457,7 +452,8 @@ kimage_early_prepare_segments(struct kimage *image)
 	void *ldata;
 
 	image->kernel_buf_len = __ekdump_size;
-	image->kernel_buf = kmemdup(__ekdump_start, image->kernel_buf_len, GFP_KERNEL);
+	image->kernel_buf = kmemdup(__ekdump_start, image->kernel_buf_len,
+								GFP_KERNEL);
 
 	/* Call arch image probe handlers */
 	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
@@ -564,7 +560,7 @@ out_free_image:
 	return ret;
 }
 
-int kexec_early_dump(void)
+void __init kexec_early_dump(void)
 {
 	int ret = 0, i;
 	struct kimage **dest_image, *image;
@@ -614,7 +610,7 @@ out:
 	arch_kexec_protect_crashkres();
 
 	kimage_free(image);
-	return ret;
+	return;
 }
 #endif
 
