@@ -28,6 +28,7 @@
 #include <linux/syscalls.h>
 #include <linux/vmalloc.h>
 #include "kexec_internal.h"
+#include "kexec_file.h"
 
 #ifdef CONFIG_KEXEC_SIG
 static bool sig_enforce = IS_ENABLED(CONFIG_KEXEC_SIG_FORCE);
@@ -37,8 +38,6 @@ void set_kexec_sig_enforced(void)
 	sig_enforce = true;
 }
 #endif
-
-static int kexec_calculate_store_digests(struct kimage *image);
 
 /* Maximum size in bytes for kernel/initrd files. */
 #define KEXEC_FILE_SIZE_MAX	min_t(s64, 4LL << 30, SSIZE_MAX)
@@ -65,7 +64,7 @@ int kexec_image_probe_default(struct kimage *image, void *buf,
 	return ret;
 }
 
-static void *kexec_image_load_default(struct kimage *image)
+void *kexec_image_load_default(struct kimage *image)
 {
 	if (!image->fops || !image->fops->load)
 		return ERR_PTR(-ENOEXEC);
@@ -437,183 +436,6 @@ out:
 	return ret;
 }
 
-#ifdef CONFIG_EARLY_KDUMP
-
-extern char __ekdump_start[];
-extern unsigned long __ekdump_size;
-
-static int
-kimage_early_prepare_segments(struct kimage *image)
-	/*, int kernel_fd, int initrd_fd,
-			     const char __user *cmdline_ptr,
-			     unsigned long cmdline_len, unsigned flags)*/
-{
-	int ret;
-	void *ldata;
-
-	image->kernel_buf_len = __ekdump_size;
-	image->kernel_buf = kmemdup(__ekdump_start, image->kernel_buf_len,
-								GFP_KERNEL);
-
-	/* Call arch image probe handlers */
-	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
-					    image->kernel_buf_len);
-	if (ret)
-		goto out;
-
-#ifdef CONFIG_KEXEC_SIG
-	ret = kimage_validate_signature(image);
-
-	if (ret)
-		goto out;
-#endif
-	/* It is possible that there no initramfs is being loaded */
-//	if (!(flags & KEXEC_FILE_NO_INITRAMFS)) {
-//		ret = kernel_read_file_from_fd(initrd_fd, 0, &image->initrd_buf,
-//					       INT_MAX, NULL,
-//					       READING_KEXEC_INITRAMFS);
-//		if (ret < 0)
-//			goto out;
-//		image->initrd_buf_len = ret;
-//		ret = 0;
-//	}
-
-//	if (cmdline_len) {
-//		image->cmdline_buf = memdup_user(cmdline_ptr, cmdline_len);
-//		if (IS_ERR(image->cmdline_buf)) {
-//			ret = PTR_ERR(image->cmdline_buf);
-//			image->cmdline_buf = NULL;
-//			goto out;
-//		}
-//
-//		image->cmdline_buf_len = cmdline_len;
-//
-//		/* command line should be a string with last byte null */
-//		if (image->cmdline_buf[cmdline_len - 1] != '\0') {
-//			ret = -EINVAL;
-//			goto out;
-//		}
-//
-//		ima_kexec_cmdline(kernel_fd, image->cmdline_buf,
-//				  image->cmdline_buf_len - 1);
-//	}
-
-	/* IMA needs to pass the measurement list to the next kernel. */
-	ima_add_kexec_buffer(image);
-
-	/* Call arch image load handlers */
-	ldata = kexec_image_load_default(image);
-
-	if (IS_ERR(ldata)) {
-		ret = PTR_ERR(ldata);
-		goto out;
-	}
-
-	image->image_loader_data = ldata;
-out:
-	/* In case of error, free up all allocated memory in this function */
-	if (ret)
-		kimage_file_post_load_cleanup(image);
-	return ret;
-}
-
-static int
-kimage_early_alloc_init(struct kimage **rimage)
-{
-	int ret;
-	struct kimage *image;
-
-	image = do_kimage_alloc_init();
-	if (!image)
-		return -ENOMEM;
-
-	image->file_mode = 1;
-
-	/* Enable special crash kernel control page alloc policy. */
-	image->control_page = crashk_res.start;
-	image->type = KEXEC_TYPE_CRASH;
-
-	ret = kimage_early_prepare_segments(image);
-	if (ret)
-		goto out_free_image;
-
-	ret = sanity_check_segment_list(image);
-	if (ret)
-		goto out_free_post_load_bufs;
-
-	ret = -ENOMEM;
-	image->control_code_page = kimage_alloc_control_pages(image,
-					   get_order(KEXEC_CONTROL_PAGE_SIZE));
-	if (!image->control_code_page) {
-		pr_err("Could not allocate control_code_buffer\n");
-		goto out_free_post_load_bufs;
-	}
-
-	*rimage = image;
-	return 0;
-//out_free_control_pages:
-//	kimage_free_page_list(&image->control_pages);
-out_free_post_load_bufs:
-	// TODO	kimage_file_post_load_cleanup(image);
-out_free_image:
-	kfree(image);
-	return ret;
-}
-
-void __init kexec_early_dump(void)
-{
-	int ret = 0, i;
-	struct kimage **dest_image, *image;
-
-	image = NULL;
-	dest_image = &kexec_crash_image;
-
-	ret = kimage_early_alloc_init(&image);
-	if (ret)
-		goto out;
-
-	ret = kimage_crash_copy_vmcoreinfo(image);
-	if (ret)
-		goto out;
-
-	ret = kexec_calculate_store_digests(image);
-	if (ret)
-		goto out;
-
-	for (i = 0; i < image->nr_segments; i++) {
-		struct kexec_segment *ksegment;
-
-		ksegment = &image->segment[i];
-		pr_debug("Loading segment %d: buf=0x%p bufsz=0x%zx mem=0x%lx memsz=0x%zx\n",
-			 i, ksegment->buf, ksegment->bufsz, ksegment->mem,
-			 ksegment->memsz);
-
-		ret = kimage_load_segment(image, &image->segment[i]);
-		if (ret)
-			goto out;
-	}
-
-	kimage_terminate(image);
-
-	ret = machine_kexec_post_load(image);
-	if (ret)
-		goto out;
-
-	/*
-	 * Free up any temporary buffers allocated which are not needed
-	 * after image has been loaded
-	 */
-	// TODO kimage_file_post_load_cleanup(image);
-//TODO exchange:
-	image = xchg(dest_image, image);
-out:
-	arch_kexec_protect_crashkres();
-
-	kimage_free(image);
-	return;
-}
-#endif
-
 static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
 				    struct kexec_buf *kbuf)
 {
@@ -686,7 +508,7 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
 	return 1;
 }
 
-static int locate_mem_hole_callback(struct resource *res, void *arg)
+int locate_mem_hole_callback(struct resource *res, void *arg)
 {
 	struct kexec_buf *kbuf = (struct kexec_buf *)arg;
 	u64 start = res->start, end = res->end;
@@ -714,7 +536,7 @@ static int locate_mem_hole_callback(struct resource *res, void *arg)
 }
 
 #ifdef CONFIG_ARCH_KEEP_MEMBLOCK
-static int kexec_walk_memblock(struct kexec_buf *kbuf,
+int kexec_walk_memblock(struct kexec_buf *kbuf,
 			       int (*func)(struct resource *, void *))
 {
 	int ret = 0;
@@ -765,7 +587,7 @@ static int kexec_walk_memblock(struct kexec_buf *kbuf,
 	return ret;
 }
 #else
-static int kexec_walk_memblock(struct kexec_buf *kbuf,
+int kexec_walk_memblock(struct kexec_buf *kbuf,
 			       int (*func)(struct resource *, void *))
 {
 	return 0;
@@ -781,7 +603,7 @@ static int kexec_walk_memblock(struct kexec_buf *kbuf,
  * and that value will be returned. If all free regions are visited without
  * func returning non-zero, then zero will be returned.
  */
-static int kexec_walk_resources(struct kexec_buf *kbuf,
+int kexec_walk_resources(struct kexec_buf *kbuf,
 				int (*func)(struct resource *, void *))
 {
 #ifdef CONFIG_CRASH_DUMP
@@ -875,7 +697,7 @@ int kexec_add_buffer(struct kexec_buf *kbuf)
 }
 
 /* Calculate and store the digest of segments */
-static int kexec_calculate_store_digests(struct kimage *image)
+int kexec_calculate_store_digests(struct kimage *image)
 {
 	struct crypto_shash *tfm;
 	struct shash_desc *desc;

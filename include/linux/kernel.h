@@ -385,7 +385,10 @@ ftrace_vprintk(const char *fmt, va_list ap)
 static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
 #endif /* CONFIG_TRACING */
 
+// TODO place to real line, just dumped here...
+#ifdef CONFIG_EARLY_KDUMP
 void kexec_early_dump(void);
+#endif
 
 /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
 #ifdef CONFIG_FTRACE_MCOUNT_RECORD
