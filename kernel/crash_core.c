@@ -40,10 +40,13 @@ int kimage_crash_copy_vmcoreinfo(struct kimage *image)
 	struct page *vmcoreinfo_page;
 	void *safecopy;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	if (!IS_ENABLED(CONFIG_CRASH_DUMP))
 		return 0;
+ pr_err("%s %d\n", __func__, __LINE__);
 	if (image->type != KEXEC_TYPE_CRASH)
 		return 0;
+ pr_err("%s %d\n", __func__, __LINE__);
 
 	/*
 	 * For kdump, allocate one vmcoreinfo safe copy from the
@@ -59,15 +62,18 @@ int kimage_crash_copy_vmcoreinfo(struct kimage *image)
 		pr_warn("Could not allocate vmcoreinfo buffer\n");
 		return -ENOMEM;
 	}
+ pr_err("%s %d\n", __func__, __LINE__);
 	safecopy = vmap(&vmcoreinfo_page, 1, VM_MAP, PAGE_KERNEL);
 	if (!safecopy) {
 		pr_warn("Could not vmap vmcoreinfo buffer\n");
 		return -ENOMEM;
 	}
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	image->vmcoreinfo_data_copy = safecopy;
 	crash_update_vmcoreinfo_safecopy(safecopy);
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	return 0;
 }
 
