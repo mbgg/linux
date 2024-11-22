@@ -62,6 +62,8 @@ static int prepare_elf_headers(void **addr, unsigned long *sz)
 		cmem->ranges[cmem->nr_ranges].start = start;
 		cmem->ranges[cmem->nr_ranges].end = end - 1;
 		cmem->nr_ranges++;
+	pr_err("%s %d /t cmem->ranges[%d].start = %lld\n", __func__, __LINE__, nr_ranges, start);
+	pr_err("%s %d /t cmem->ranges[%d].end = %lld\n", __func__, __LINE__, nr_ranges, end-1);
 	}
 
 	/* Exclude crashkernel region */
@@ -100,21 +102,25 @@ int load_other_segments(struct kimage *image,
 		      orig_segments = image->nr_segments;
 	int ret = 0;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	kbuf.image = image;
 	/* not allocate anything below the kernel */
 	kbuf.buf_min = kernel_load_addr + kernel_size;
 
 #ifdef CONFIG_CRASH_DUMP
+ pr_err("%s %d\n", __func__, __LINE__);
 	/* load elf core header */
 	void *headers;
 	unsigned long headers_sz;
 	if (image->type == KEXEC_TYPE_CRASH) {
+ pr_err("%s %d\n", __func__, __LINE__);
 		ret = prepare_elf_headers(&headers, &headers_sz);
 		if (ret) {
 			pr_err("Preparing elf core header failed\n");
 			goto out_err;
 		}
 
+ pr_err("%s %d\n", __func__, __LINE__);
 		kbuf.buffer = headers;
 		kbuf.bufsz = headers_sz;
 		kbuf.mem = KEXEC_BUF_MEM_UNKNOWN;
@@ -128,6 +134,7 @@ int load_other_segments(struct kimage *image,
 			vfree(headers);
 			goto out_err;
 		}
+ pr_err("%s %d\n", __func__, __LINE__);
 		image->elf_headers = headers;
 		image->elf_load_addr = kbuf.mem;
 		image->elf_headers_sz = headers_sz;
@@ -179,6 +186,7 @@ int load_other_segments(struct kimage *image,
 	kbuf.buf_max = ULONG_MAX;
 	kbuf.top_down = true;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	ret = kexec_add_buffer(&kbuf);
 	if (ret)
 		goto out_err;
@@ -188,9 +196,11 @@ int load_other_segments(struct kimage *image,
 	kexec_dprintk("Loaded dtb at 0x%lx bufsz=0x%lx memsz=0x%lx\n",
 		      kbuf.mem, kbuf.bufsz, kbuf.memsz);
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	return 0;
 
 out_err:
+ pr_err("%s %d\n", __func__, __LINE__);
 	image->nr_segments = orig_segments;
 	kvfree(dtb);
 	return ret;

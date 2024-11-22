@@ -74,10 +74,9 @@ kimage_early_prepare_segments(struct kimage *image)
 	int ret;
 	void *ldata;
 
+// TODO do we really need that? __ekdump is already in kernel memory
  pr_err("%s %d\n", __func__, __LINE__);
 	image->kernel_buf_len = (unsigned long) __ekdump_size;
- pr_err("Copy from %p to kernel_buf (%p), %lu(%lu) bytes\n", __ekdump_start, 
- 					image->kernel_buf, image->kernel_buf_len, __ekdump_size);
 	image->kernel_buf = kmemdup(__ekdump_start, image->kernel_buf_len,
 								GFP_KERNEL);
 
