@@ -3651,6 +3651,8 @@ static int enable_mismatched_32bit_el0(unsigned int cpu)
 
 static int __init init_32bit_el0_mask(void)
 {
+panic("test\n");
+
 	if (!allow_mismatched_32bit_el0)
 		return 0;
 
