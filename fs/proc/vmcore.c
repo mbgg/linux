@@ -136,9 +136,11 @@ ssize_t read_from_oldmem(struct iov_iter *iter, size_t count,
 	ssize_t read = 0, tmp;
 	int idx;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	if (!count)
 		return 0;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	offset = (unsigned long)(*ppos % PAGE_SIZE);
 	pfn = (unsigned long)(*ppos / PAGE_SIZE);
 
@@ -149,17 +151,21 @@ ssize_t read_from_oldmem(struct iov_iter *iter, size_t count,
 		else
 			nr_bytes = count;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 		/* If pfn is not ram, return zeros for sparse dump files */
 		if (!pfn_is_ram(pfn)) {
 			tmp = iov_iter_zero(nr_bytes, iter);
 		} else {
-			if (encrypted)
+			if (encrypted) {
+ pr_err("%s %d\n", __func__, __LINE__);
 				tmp = copy_oldmem_page_encrypted(iter, pfn,
 								 nr_bytes,
 								 offset);
-			else
+ 			} else {
+ pr_err("%s %d\n", __func__, __LINE__);
 				tmp = copy_oldmem_page(iter, pfn, nr_bytes,
 						       offset);
+			}
 		}
 		if (tmp < nr_bytes) {
 			srcu_read_unlock(&vmcore_cb_srcu, idx);
@@ -212,8 +218,10 @@ ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
 	struct kvec kvec = { .iov_base = buf, .iov_len = count };
 	struct iov_iter iter;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	iov_iter_kvec(&iter, ITER_DEST, &kvec, 1, count);
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	return read_from_oldmem(&iter, count, ppos,
 			cc_platform_has(CC_ATTR_MEM_ENCRYPT));
 }
@@ -731,17 +739,21 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
 	Elf64_Phdr *phdr_ptr;
 	Elf64_Nhdr *nhdr_ptr;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	phdr_ptr = (Elf64_Phdr *)(ehdr_ptr + 1);
 	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
 		void *notes_section;
 		u64 offset, max_sz, sz, real_sz = 0;
+ pr_err("%s %d\n", __func__, __LINE__);
 		if (phdr_ptr->p_type != PT_NOTE)
 			continue;
+ pr_err("%s %d\n", __func__, __LINE__);
 		max_sz = phdr_ptr->p_memsz;
 		offset = phdr_ptr->p_offset;
 		notes_section = kmalloc(max_sz, GFP_KERNEL);
 		if (!notes_section)
 			return -ENOMEM;
+ pr_err("%s %d\n", __func__, __LINE__);
 		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
 		if (rc < 0) {
 			kfree(notes_section);
@@ -855,25 +867,30 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
 	Elf64_Phdr phdr;
 	u64 phdr_sz = 0, note_off;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
 
 	rc = update_note_header_size_elf64(ehdr_ptr);
 	if (rc < 0)
 		return rc;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	rc = get_note_number_and_size_elf64(ehdr_ptr, &nr_ptnote, &phdr_sz);
 	if (rc < 0)
 		return rc;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
 	*notes_buf = vmcore_alloc_buf(*notes_sz);
 	if (!*notes_buf)
 		return -ENOMEM;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	rc = copy_notes_elf64(ehdr_ptr, *notes_buf);
 	if (rc < 0)
 		return rc;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	/* Prepare merged PT_NOTE program header. */
 	phdr.p_type    = PT_NOTE;
 	phdr.p_flags   = 0;
@@ -1216,6 +1233,7 @@ static int __init parse_crash_elf64_headers(void)
 	Elf64_Ehdr ehdr;
 	u64 addr;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	addr = elfcorehdr_addr;
 
 	/* Read ELF header */
@@ -1223,6 +1241,7 @@ static int __init parse_crash_elf64_headers(void)
 	if (rc < 0)
 		return rc;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	/* Do some basic Verification. */
 	if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0 ||
 		(ehdr.e_type != ET_CORE) ||
@@ -1237,6 +1256,7 @@ static int __init parse_crash_elf64_headers(void)
 		return -EINVAL;
 	}
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	/* Read in all elf headers. */
 	elfcorebuf_sz_orig = sizeof(Elf64_Ehdr) +
 				ehdr.e_phnum * sizeof(Elf64_Phdr);
@@ -1245,24 +1265,31 @@ static int __init parse_crash_elf64_headers(void)
 					      get_order(elfcorebuf_sz_orig));
 	if (!elfcorebuf)
 		return -ENOMEM;
+ pr_err("%s %d\n", __func__, __LINE__);
 	addr = elfcorehdr_addr;
 	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
 	if (rc < 0)
 		goto fail;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	/* Merge all PT_NOTE headers into one. */
 	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz,
 				      &elfnotes_buf, &elfnotes_sz);
 	if (rc)
 		goto fail;
+ pr_err("%s %d\n", __func__, __LINE__);
 	rc = process_ptload_program_headers_elf64(elfcorebuf, elfcorebuf_sz,
 						  elfnotes_sz, &vmcore_list);
 	if (rc)
 		goto fail;
+ pr_err("%s %d\n", __func__, __LINE__);
 	set_vmcore_list_offsets(elfcorebuf_sz, elfnotes_sz, &vmcore_list);
+ pr_err("%s %d\n", __func__, __LINE__);
 	return 0;
 fail:
+ pr_err("%s %d\n", __func__, __LINE__);
 	free_elfcorebuf();
+ pr_err("%s %d\n", __func__, __LINE__);
 	return rc;
 }
 
@@ -1327,32 +1354,42 @@ static int __init parse_crash_elf_headers(void)
 	u64 addr;
 	int rc=0;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	addr = elfcorehdr_addr;
 	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
 	if (rc < 0)
 		return rc;
+ pr_err("%s %d\n", __func__, __LINE__);
 	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
 		pr_warn("Warning: Core image elf header not found\n");
 		return -EINVAL;
 	}
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	if (e_ident[EI_CLASS] == ELFCLASS64) {
+ pr_err("%s %d\n", __func__, __LINE__);
 		rc = parse_crash_elf64_headers();
 		if (rc)
 			return rc;
+ pr_err("%s %d\n", __func__, __LINE__);
 	} else if (e_ident[EI_CLASS] == ELFCLASS32) {
+ pr_err("%s %d\n", __func__, __LINE__);
 		rc = parse_crash_elf32_headers();
 		if (rc)
 			return rc;
+ pr_err("%s %d\n", __func__, __LINE__);
 	} else {
+ pr_err("%s %d\n", __func__, __LINE__);
 		pr_warn("Warning: Core image elf header is not sane\n");
 		return -EINVAL;
 	}
+ pr_err("%s %d\n", __func__, __LINE__);
 
 	/* Determine vmcore size. */
 	vmcore_size = get_vmcore_size(elfcorebuf_sz, elfnotes_sz,
 				      &vmcore_list);
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	return 0;
 }
 
@@ -1559,27 +1596,35 @@ static int __init vmcore_init(void)
 	int rc = 0;
 
 	/* Allow architectures to allocate ELF header in 2nd kernel */
+ pr_err("%s %d\n", __func__, __LINE__);
+
 	rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
 	if (rc)
 		return rc;
-	/*
+ pr_err("%s %d\n", __func__, __LINE__);
+	 /*
 	 * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
 	 * then capture the dump.
 	 */
 	if (!(is_vmcore_usable()))
 		return rc;
-	rc = parse_crash_elf_headers();
+ pr_err("%s %d\n", __func__, __LINE__);
+	 rc = parse_crash_elf_headers();
 	if (rc) {
+ pr_err("%s %d\n", __func__, __LINE__);
 		elfcorehdr_free(elfcorehdr_addr);
 		pr_warn("Kdump: vmcore not initialized\n");
 		return rc;
 	}
+ pr_err("%s %d\n", __func__, __LINE__);
 	elfcorehdr_free(elfcorehdr_addr);
 	elfcorehdr_addr = ELFCORE_ADDR_ERR;
 
+ pr_err("%s %d\n", __func__, __LINE__);
 	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &vmcore_proc_ops);
 	if (proc_vmcore)
 		proc_vmcore->size = vmcore_size;
+ pr_err("%s %d\n", __func__, __LINE__);
 	return 0;
 }
 fs_initcall(vmcore_init);
