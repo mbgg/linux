@@ -100,6 +100,11 @@ kimage_early_prepare_segments(struct kimage *image)
 #endif
  pr_err("%s %d\n", __func__, __LINE__);
 
+ 	image->initrd_buf = NULL;
+	image->initrd_buf_len = 0;
+	image->cmdline_buf = NULL;
+	image->cmdline_buf_len = 0;
+ pr_err("%s %d image->nr_segments = %d\n", __func__, __LINE__, image->nr_segments);
 	/* IMA needs to pass the measurement list to the next kernel. */
 	ima_add_kexec_buffer(image);
 
