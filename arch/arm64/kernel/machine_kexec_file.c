@@ -61,9 +61,9 @@ static int prepare_elf_headers(void **addr, unsigned long *sz)
 	for_each_mem_range(i, &start, &end) {
 		cmem->ranges[cmem->nr_ranges].start = start;
 		cmem->ranges[cmem->nr_ranges].end = end - 1;
+	pr_err("%s %d \t cmem->ranges[%d].start = %lld\n", __func__, __LINE__, cmem->nr_ranges, start);
+	pr_err("%s %d \t cmem->ranges[%d].end = %lld\n", __func__, __LINE__, cmem->nr_ranges, end-1);
 		cmem->nr_ranges++;
-	pr_err("%s %d /t cmem->ranges[%d].start = %lld\n", __func__, __LINE__, nr_ranges, start);
-	pr_err("%s %d /t cmem->ranges[%d].end = %lld\n", __func__, __LINE__, nr_ranges, end-1);
 	}
 
 	/* Exclude crashkernel region */
@@ -102,7 +102,8 @@ int load_other_segments(struct kimage *image,
 		      orig_segments = image->nr_segments;
 	int ret = 0;
 
- pr_err("%s %d\n", __func__, __LINE__);
+ pr_err("%s %d kernel load address %p - initrd %p - cmdline %p\n", __func__, __LINE__,
+		kernel_load_addr, initrd, cmdline);
 	kbuf.image = image;
 	/* not allocate anything below the kernel */
 	kbuf.buf_min = kernel_load_addr + kernel_size;

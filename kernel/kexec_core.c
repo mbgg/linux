@@ -820,6 +820,7 @@ static int kimage_load_crash_segment(struct kimage *image,
 		}
 
 		if (uchunk) {
+ pr_err("%s %d uchunk = %ld\n", __func__, __LINE__, uchunk);
 			/* For file based kexec, source pages are in kernel memory */
 			if (image->file_mode)
 				memcpy(ptr, kbuf, uchunk);

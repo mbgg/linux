@@ -76,9 +76,13 @@ kimage_early_prepare_segments(struct kimage *image)
 
 // TODO do we really need that? __ekdump is already in kernel memory
  pr_err("%s %d\n", __func__, __LINE__);
+ pr_err("%s __ekdump_size = %ld\n", __func__, __ekdump_size);
+ pr_err("%s __ekdump_start = %p\n", __func__, __ekdump_start);
 	image->kernel_buf_len = (unsigned long) __ekdump_size;
 	image->kernel_buf = kmemdup(__ekdump_start, image->kernel_buf_len,
 								GFP_KERNEL);
+ pr_err("%s kernel_buf_len = %ld\n", __func__, image->kernel_buf_len);
+ pr_err("%s kernel_buf = %p\n", __func__, image->kernel_buf);
 
  pr_err("%s %d\n", __func__, __LINE__);
 	/* Call arch image probe handlers */
@@ -109,6 +113,7 @@ kimage_early_prepare_segments(struct kimage *image)
 
  pr_err("%s %d\n", __func__, __LINE__);
 	image->image_loader_data = ldata;
+ pr_err("%s %d image->image_loader_data %d\n", __func__, __LINE__, image->image_loader_data);
 out:
  pr_err("%s %d\n", __func__, __LINE__);
 	/* In case of error, free up all allocated memory in this function */
@@ -156,8 +161,6 @@ kimage_early_alloc_init(struct kimage **rimage)
  pr_err("%s %d\n", __func__, __LINE__);
 	*rimage = image;
 	return 0;
-//out_free_control_pages:
-//	kimage_free_page_list(&image->control_pages);
 out_free_post_load_bufs:
 	kimage_early_post_load_cleanup(image);
 out_free_image:
