@@ -1991,8 +1991,9 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
 				queue_writel(queue, ISR, MACB_BIT(TCOMP) |
 							 MACB_BIT(TXUBR));
 
-			if (status & MACB_BIT(TXUBR)) {
+			if (status & MACB_BIT(TXUBR) || queue->tx_pending) {
 				queue->txubr_pending = true;
+				queue->tx_pending = false;
 				wmb(); // ensure softirq can see update
 			}
 
@@ -2442,6 +2443,9 @@ static netdev_tx_t macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			     skb->len);
 
 	spin_lock(&bp->lock);
+	/* TSTART write might get dropped, so make the IRQ re-trigger a buffer read */
+	if (macb_readl(bp, TSR) & MACB_BIT(TGO))
+		queue->tx_pending = true;
 	macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(TSTART));
 	spin_unlock(&bp->lock);
 
