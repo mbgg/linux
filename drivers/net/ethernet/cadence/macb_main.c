@@ -2870,6 +2870,21 @@ static void macb_configure_dma(struct macb *bp)
 	}
 }
 
+static void gem_set_axi_max_pipeline(struct macb *bp)
+{
+	u32 amp;
+
+	/* AXI pipeline setup
+	 * Set write transaction operation to the write response (B) channel.
+	 * Set outstanding AXI read and write requests to maximum number of 8.
+	 */
+	amp = gem_readl(bp, AMP);
+	amp = GEM_BFINS(AW2B_FILL, GEM_AW2B_FILL_AW2B, amp);
+	amp = GEM_BFINS(AW2W_MAX_PIPE, 8, amp);
+	amp = GEM_BFINS(AR2R_MAX_PIPE, 8, amp);
+	gem_writel(bp, AMP, amp);
+}
+
 static void macb_init_hw(struct macb *bp)
 {
 	u32 config;
@@ -2901,6 +2916,10 @@ static void macb_init_hw(struct macb *bp)
 	bp->rx_frm_len_mask = MACB_RX_FRMLEN_MASK;
 	if (bp->caps & MACB_CAPS_JUMBO)
 		bp->rx_frm_len_mask = MACB_RX_JFRMLEN_MASK;
+
+	if (macb_is_gem(bp) && !!(bp->caps & MACB_CAPS_AXI_MAX_PIPELINE) ) {
+		gem_set_axi_max_pipeline(bp);
+	}
 
 	macb_configure_dma(bp);
 
@@ -5489,8 +5508,8 @@ static const struct macb_config eyeq5_config = {
 
 static const struct macb_config raspberrypi_rp1_config = {
 	.caps = MACB_CAPS_GIGABIT_MODE_AVAILABLE | MACB_CAPS_CLK_HW_CHG |
-		MACB_CAPS_JUMBO |
-		MACB_CAPS_GEM_HAS_PTP,
+		MACB_CAPS_JUMBO | MACB_CAPS_GEM_HAS_PTP |
+		MACB_CAPS_AXI_MAX_PIPELINE,
 	.dma_burst_length = 16,
 	.clk_init = macb_clk_init,
 	.init = macb_init,

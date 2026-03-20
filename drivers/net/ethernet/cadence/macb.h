@@ -82,6 +82,7 @@
 #define GEM_PBUFRXCUT		0x0044 /* RX Partial Store and Forward */
 #define GEM_JML			0x0048 /* Jumbo Max Length */
 #define GEM_HS_MAC_CONFIG	0x0050 /* GEM high speed config */
+#define GEM_AMP			0x0054 /* AXI Max Pipeline */
 #define GEM_HRB			0x0080 /* Hash Bottom */
 #define GEM_HRT			0x0084 /* Hash Top */
 #define GEM_SA1B		0x0088 /* Specific1 Bottom */
@@ -356,6 +357,15 @@
 #define GEM_ADDR64_OFFSET	30 /* Address bus width - 64b or 32b */
 #define GEM_ADDR64_SIZE		1
 
+/* Bitfields in AMP */
+#define GEM_AR2R_MAX_PIPE_OFFSET	0  /* Max number of outstanding AXI read requests */
+#define GEM_AR2R_MAX_PIPE_SIZE		8
+#define GEM_AW2W_MAX_PIPE_OFFSET	8  /* Max number of outstanding AXI write requests */
+#define GEM_AW2W_MAX_PIPE_SIZE		8
+#define GEM_AW2B_FILL_OFFSET		16 /* Select the max AW2W AXI transactions operates: */
+#define GEM_AW2B_FILL_AW2W		0  /*   0: the Write Address channel (AW) to Write Data channel (W) */
+#define GEM_AW2B_FILL_AW2B		1  /*   1: the Write Address channel (AW) to Write Response channel (B) */
+#define GEM_AW2B_FILL_SIZE		1
 
 /* Bitfields in PBUFRXCUT */
 #define GEM_ENCUTTHRU_OFFSET	31 /* Enable RX partial store and forward */
@@ -779,6 +789,7 @@
 #define MACB_CAPS_DMA_PTP			BIT(22)
 #define MACB_CAPS_RSC				BIT(23)
 #define MACB_CAPS_NO_LSO			BIT(24)
+#define MACB_CAPS_AXI_MAX_PIPELINE		BIT(25)
 
 /* LSO settings */
 #define MACB_LSO_UFO_ENABLE			0x01
