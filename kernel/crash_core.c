@@ -673,4 +673,17 @@ static int __init crash_hotplug_init(void)
 }
 
 subsys_initcall(crash_hotplug_init);
+
+#endif /* CONFIG_CRASH_HOTPLUG */
+
+#ifdef CONFIG_EARLY_KDUMP
+static int __init crash_early_kdump_init(void)
+{
+//	if (IS_ENABLED(CONFIG_EARLY_KDUMP))
+ pr_err("%s %d\n", __func__, __LINE__);
+		kexec_early_dump();
+	return 0;
+}
+subsys_initcall(crash_early_kdump_init);
+// TODO another option would be early_initcall(crash_early_kdump_init);
 #endif
